@@ -1,0 +1,9 @@
+config:
+  ENVIRONMENT: staging
+  DB_HOST: flights-api-postgresql
+  REDIS_URL: redis://flights-api-redis-master:6379/0
+
+postgresql:
+  enabled: true
+redis:
+  enabled: true

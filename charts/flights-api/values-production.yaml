@@ -1,0 +1,19 @@
+replicaCount: 2
+
+config:
+  ENVIRONMENT: production
+  DB_HOST: CHANGEME.rds.amazonaws.com
+  REDIS_URL: redis://CHANGEME.cache.amazonaws.com:6379/0
+
+postgresql:
+  enabled: false
+redis:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi

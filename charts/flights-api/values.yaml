@@ -1,0 +1,52 @@
+replicaCount: 1
+
+image:
+  repository: flights-api
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+probes:
+  liveness:
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 20
+  readiness:
+    path: /ready
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+config:
+  LOG_LEVEL: info
+  FLIGHTS_CURRENCY: USD
+  FLIGHTS_DEFAULT_ORIGIN: TLV
+  SEARCH_CACHE_TTL: "600"
+  DEALS_CACHE_TTL: "7200"
+  DB_PORT: "5432"
+  DB_NAME: flights
+
+postgresql:
+  enabled: true
+  auth:
+    database: flights
+    username: flights
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+
+secrets:
+  DB_USER: flights
+  DB_PASSWORD: changeme-local-only

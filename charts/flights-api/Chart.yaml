@@ -1,0 +1,16 @@
+apiVersion: v2
+name: flights-api
+description: Flights booking API backed by Google Flights data
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: postgresql
+    version: "18.8.7"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: "28.0.2"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
