@@ -28,7 +28,7 @@ probes:
     periodSeconds: 10
 
 config:
-  LOG_LEVEL: info
+  LOG_LEVEL: INFO
   FLIGHTS_CURRENCY: USD
   FLIGHTS_DEFAULT_ORIGIN: TLV
   SEARCH_CACHE_TTL: "600"
@@ -41,6 +41,7 @@ postgresql:
   auth:
     database: flights
     username: flights
+    password: changeme-local-only
 
 redis:
   enabled: true
