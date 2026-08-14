@@ -1,14 +1,31 @@
+# Production values.
+#
+# NOTE: postgresql and redis run as bundled subcharts here because this
+# environment lives on the homelab k3s cluster. On AWS these would be
+# disabled and DB_HOST / REDIS_URL would point at RDS and ElastiCache.
 replicaCount: 2
 
 config:
   ENVIRONMENT: production
-  DB_HOST: CHANGEME.rds.amazonaws.com
-  REDIS_URL: redis://CHANGEME.cache.amazonaws.com:6379/0
+  LOG_LEVEL: INFO
 
 postgresql:
-  enabled: false
+  enabled: true
+  auth:
+    database: flights
+    username: flights
+    password: changeme-production-placeholder
+
 redis:
-  enabled: false
+  enabled: true
+  auth:
+    enabled: false
+  # Standalone: replicas add no value on a single-node cluster.
+  architecture: standalone
+
+secrets:
+  DB_USER: flights
+  DB_PASSWORD: changeme-production-placeholder
 
 resources:
   requests:
