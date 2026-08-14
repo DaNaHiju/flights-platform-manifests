@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flights-api-staging
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+    targetRevision: main
+    path: charts/flights-api
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-staging.yaml
+      parameters:
+        - name: image.tag
+          value: local
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
