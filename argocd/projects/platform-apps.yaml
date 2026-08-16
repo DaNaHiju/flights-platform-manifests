@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform-apps
+  namespace: argocd
+spec:
+  description: Flights platform applications
+  sourceRepos:
+    - https://github.com/DaNaHiju/flights-platform-manifests.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: staging
+    - server: https://kubernetes.default.svc
+      namespace: production
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+  roles:
+    - name: read-only
+      description: View-only access to applications in this project
+      policies:
+        - p, proj:platform-apps:read-only, applications, get, platform-apps/*, allow
+      groups: []
+    - name: deploy
+      description: Full sync/deploy access for CI
+      policies:
+        - p, proj:platform-apps:deploy, applications, get, platform-apps/*, allow
+        - p, proj:platform-apps:deploy, applications, sync, platform-apps/*, allow
+        - p, proj:platform-apps:deploy, applications, action/*, platform-apps/*, allow
+      groups: []
+  syncWindows:
+    - kind: deny
+      schedule: '0 0 * * 6'
+      duration: 48h
+      applications:
+        - flights-api-production
+      manualSync: false

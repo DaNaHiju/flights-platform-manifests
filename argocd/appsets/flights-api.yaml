@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: flights-api
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - env: staging
+            automated: "true"
+          - env: production
+            automated: "false"
+  template:
+    metadata:
+      name: 'flights-api-{{.env}}'
+      namespace: argocd
+    spec:
+      project: platform-apps
+      source:
+        repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+        targetRevision: main
+        path: charts/flights-api
+        helm:
+          valueFiles:
+            - values.yaml
+            - 'values-{{.env}}.yaml'
+          parameters:
+            - name: image.tag
+              value: local
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.env}}'
+  templatePatch: |
+    {{- if eq .env "staging" }}
+    spec:
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+    {{- end }}
