@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform-infra
+  namespace: argocd
+spec:
+  description: Platform infrastructure components requiring cluster-scoped permissions (CRDs, ClusterRoles, webhooks), kept separate from application workloads for privilege separation
+  sourceRepos:
+    - https://github.com/DaNaHiju/flights-platform-manifests.git
+    - https://istio-release.storage.googleapis.com/charts
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: istio-system
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+  roles:
+    - name: read-only
+      description: View-only access to applications in this project
+      policies:
+        - p, proj:platform-infra:read-only, applications, get, platform-infra/*, allow
+      groups: []
+    - name: deploy
+      description: Full sync/deploy access for CI
+      policies:
+        - p, proj:platform-infra:deploy, applications, get, platform-infra/*, allow
+        - p, proj:platform-infra:deploy, applications, sync, platform-infra/*, allow
+        - p, proj:platform-infra:deploy, applications, action/*, platform-infra/*, allow
+      groups: []

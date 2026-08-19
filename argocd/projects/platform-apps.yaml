@@ -32,6 +32,7 @@ spec:
     - kind: deny
       schedule: '0 0 * * 6'
       duration: 48h
+      timeZone: Asia/Jerusalem
       applications:
         - flights-api-production
       manualSync: false

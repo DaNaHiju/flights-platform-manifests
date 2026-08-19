@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-base
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Must land before istiod: installs the Istio CRDs it depends on.
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  project: platform-infra
+  source:
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: base
+    targetRevision: 1.30.3
+    helm: {}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # Istio's CRDs exceed the last-applied-configuration annotation size limit under client-side apply.
+      - ServerSideApply=true
