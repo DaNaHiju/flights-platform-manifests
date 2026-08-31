@@ -48,6 +48,29 @@ redis:
   auth:
     enabled: false
 
+# Local/staging placeholder credentials. Consumed by secret.yaml, which only
+# renders while externalSecrets.enabled is false.
 secrets:
   DB_USER: flights
   DB_PASSWORD: changeme-local-only
+
+externalSecrets:
+  # false: secret.yaml renders the Secret from the placeholders above.
+  # true:  externalsecret.yaml renders an ExternalSecret and ESO owns the Secret.
+  enabled: false
+  refreshInterval: 1h
+  # Which ClusterSecretStore to read from. Homelab validation uses the ESO fake
+  # provider; EKS uses aws-secrets-manager.
+  # See argocd/platform-infra/clustersecretstores.
+  storeName: fake-local
+  # Key paths within the selected store.
+  remoteKeys:
+    dbUser: flights-api/db-user
+    dbPassword: flights-api/db-password
+
+istio:
+  # Sidecar CRD (config scoping), not sidecar injection. When enabled, ships a
+  # networking.istio.io Sidecar that limits the mesh config istiod pushes to the
+  # flights-api proxies. Off by default; enabled in production.
+  sidecarScope:
+    enabled: false

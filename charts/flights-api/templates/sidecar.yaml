@@ -1,0 +1,44 @@
+{{- if .Values.istio.sidecarScope.enabled }}
+# Istio Sidecar resource — NOT the injected proxy itself. This scopes which
+# slice of mesh configuration istiod pushes to the flights-api proxies.
+#
+# Without a Sidecar resource, every proxy in the mesh receives config for every
+# service and endpoint in every namespace. That set grows ~quadratically with
+# mesh size and consumes real memory in each Envoy. flights-api only ever needs
+# to reach services in its own namespace plus the Istio control plane, so we
+# constrain it to exactly that.
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: {{ include "flights-api.fullname" . }}
+  labels:
+    {{- include "flights-api.labels" . | nindent 4 }}
+spec:
+  # Bind to this release's flights-api pods only — not every workload in the
+  # namespace. Uses the same labels as the Deployment's pod selector.
+  workloadSelector:
+    labels:
+      {{- include "flights-api.selectorLabels" . | nindent 6 }}
+  egress:
+    # "./*"            — every host in flights-api's own namespace (the app,
+    #                    the bundled postgres and redis).
+    # "istio-system/*" — the control plane. Required in almost every Sidecar:
+    #                    without it the proxy loses istiod, telemetry, and the
+    #                    ingress/egress gateways, which breaks the data plane.
+    - hosts:
+        - "./*"
+        - "istio-system/*"
+  outboundTrafficPolicy:
+    # ALLOW_ANY, deliberately — not REGISTRY_ONLY.
+    #
+    # flights-api makes outbound calls to the external Google Flights API,
+    # which is not catalogued by a ServiceEntry. REGISTRY_ONLY blackholes any
+    # destination not in the mesh registry (here, only the two egress scopes
+    # above), so those calls would fail with a sidecar-generated 502.
+    # ALLOW_ANY lets unknown external destinations pass through while still
+    # keeping the *config* pushed to this proxy scoped by egress.hosts.
+    #
+    # Tighten to REGISTRY_ONLY once every external dependency has an explicit
+    # ServiceEntry.
+    mode: ALLOW_ANY
+{{- end }}

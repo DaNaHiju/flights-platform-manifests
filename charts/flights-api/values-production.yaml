@@ -14,7 +14,24 @@ postgresql:
   auth:
     database: flights
     username: flights
-    password: changeme-production-placeholder
+    # MUST equal flights-api.fullname for the production release. Values files
+    # cannot call chart helpers, so this is hardcoded: the ArgoCD ApplicationSet
+    # names the release "flights-api-production", and because the chart name
+    # "flights-api" is contained in that release name, fullname renders it
+    # verbatim. Changing nameOverride / fullnameOverride or the release name
+    # breaks BOTH this subchart lookup and the Deployment's envFrom secretRef.
+    existingSecret: flights-api-production
+    # false: the StatefulSet then needs only DB_PASSWORD from the secret above.
+    # The ESO-owned Secret carries no postgres-password / admin key. Without
+    # this the subchart regenerates a random password and the app cannot connect.
+    enablePostgresUser: false
+    secretKeys:
+      userPasswordKey: DB_PASSWORD
+    # ORDERING: the Secret is created by the ExternalSecret (ESO) from AWS
+    # Secrets Manager. It must exist before the postgres StatefulSet pod starts;
+    # until then the pod backs off and retries.
+    #
+    # The AWS secret's DB_USER value must equal auth.username above.
 
 redis:
   enabled: true
@@ -23,9 +40,19 @@ redis:
   # Standalone: replicas add no value on a single-node cluster.
   architecture: standalone
 
-secrets:
-  DB_USER: flights
-  DB_PASSWORD: changeme-production-placeholder
+# DB credentials are delivered by External Secrets Operator (externalsecret.yaml),
+# never stored in Git. secret.yaml does not render while this is true.
+# See argocd/platform-infra/clustersecretstores.
+externalSecrets:
+  enabled: true
+  storeName: aws-secrets-manager
+  remoteKeys:
+    dbUser: flights-platform/production/db-user
+    dbPassword: flights-platform/production/db-password
+
+istio:
+  sidecarScope:
+    enabled: true
 
 resources:
   requests:
