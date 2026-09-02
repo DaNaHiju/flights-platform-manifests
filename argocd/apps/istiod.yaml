@@ -39,3 +39,19 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      # Required for managedFieldsManagers below: only server-side apply makes
+      # the API server track per-field ownership.
+      - ServerSideApply=true
+      # Without this, ignoreDifferences only hides the diff: a sync would still
+      # apply the Git version over the fields istiod owns.
+      - RespectIgnoreDifferences=true
+  # Same pattern as istio-base: istiod (pilot-discovery) patches its own
+  # validating webhook at runtime — caBundle and failurePolicy — so live state
+  # permanently differs from Git. Ignoring by field manager avoids enumerating
+  # fields that change between Istio versions.
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: istio-validator-istio-system
+      managedFieldsManagers:
+        - pilot-discovery
