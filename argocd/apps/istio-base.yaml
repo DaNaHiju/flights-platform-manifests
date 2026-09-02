@@ -26,3 +26,15 @@ spec:
       - CreateNamespace=true
       # Istio's CRDs exceed the last-applied-configuration annotation size limit under client-side apply.
       - ServerSideApply=true
+      # Without this, ignoreDifferences only hides the diff: a sync would still
+      # apply the Git version and blank the caBundle below.
+      - RespectIgnoreDifferences=true
+  # istiod patches the caBundle into this webhook at runtime, so live state
+  # permanently differs from Git. Without this the Application sits OutOfSync
+  # forever; with selfHeal it would also fight istiod over the field.
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: istiod-default-validator
+      jsonPointers:
+        - /webhooks/0/clientConfig/caBundle
