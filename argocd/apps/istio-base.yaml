@@ -29,12 +29,16 @@ spec:
       # Without this, ignoreDifferences only hides the diff: a sync would still
       # apply the Git version and blank the caBundle below.
       - RespectIgnoreDifferences=true
-  # istiod patches the caBundle into this webhook at runtime, so live state
-  # permanently differs from Git. Without this the Application sits OutOfSync
-  # forever; with selfHeal it would also fight istiod over the field.
+  # istiod (pilot-discovery) patches this webhook at runtime: it injects the
+  # caBundle and flips failurePolicy from Ignore to Fail once validation is
+  # confirmed working. Both fields permanently differ from Git.
+  # managedFieldsManagers ignores everything that manager owns, rather than
+  # enumerating fields that change between Istio versions. This relies on
+  # ServerSideApply above, which is what makes the API server track per-field
+  # ownership.
   ignoreDifferences:
     - group: admissionregistration.k8s.io
       kind: ValidatingWebhookConfiguration
       name: istiod-default-validator
-      jsonPointers:
-        - /webhooks/0/clientConfig/caBundle
+      managedFieldsManagers:
+        - pilot-discovery
