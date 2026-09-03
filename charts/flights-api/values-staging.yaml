@@ -5,5 +5,36 @@ config:
 
 postgresql:
   enabled: true
+  auth:
+    database: flights
+    username: flights
+    # MUST equal flights-api.fullname for the staging release. Values files
+    # cannot call chart helpers, so this is hardcoded: the ArgoCD ApplicationSet
+    # names the release "flights-api-staging", and because the chart name
+    # "flights-api" is contained in that release name, fullname renders it
+    # verbatim. Changing nameOverride / fullnameOverride or the release name
+    # breaks BOTH this subchart lookup and the Deployment's envFrom secretRef.
+    existingSecret: flights-api-staging
+    # false: the StatefulSet then needs only DB_PASSWORD from the secret above.
+    # The ESO-owned Secret carries no postgres-password / admin key, and the
+    # "postgres" superuser gets no remote password (unused by this app).
+    enablePostgresUser: false
+    secretKeys:
+      userPasswordKey: DB_PASSWORD
+    # ORDERING: this Secret is created by the ExternalSecret (ESO). It must exist
+    # before the postgres StatefulSet pod starts; until then the pod backs off
+    # and retries. ESO reconciles the fake store in seconds, so it converges with
+    # no manual step.
+
 redis:
   enabled: true
+
+# Assignment 5.1: the ExternalSecret -> Secret -> envFrom chain is exercised in
+# staging too, not only production. k3s has no EKS OIDC provider, so IRSA and the
+# AWS store cannot work here — the ESO fake provider stands in.
+externalSecrets:
+  enabled: true
+  storeName: fake-local
+  remoteKeys:
+    dbUser: flights-api/db-user
+    dbPassword: flights-api/db-password

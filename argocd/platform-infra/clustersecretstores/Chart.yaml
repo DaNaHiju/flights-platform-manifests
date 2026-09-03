@@ -1,0 +1,5 @@
+apiVersion: v2
+name: clustersecretstores
+description: ESO ClusterSecretStores for the flights platform (cluster-scoped, platform-infra privilege domain)
+type: application
+version: 0.1.0

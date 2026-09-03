@@ -1,0 +1,12 @@
+# Both stores render by default.
+#
+# The homelab k3s cluster has no EKS OIDC provider, so the AWS store cannot
+# authenticate there and would report NotReady (a degraded ArgoCD app). The
+# homelab Application (argocd/apps/clustersecretstores.yaml) sets aws.enabled=false
+# explicitly. The EKS bootstrap sets fake.enabled=false.
+aws:
+  enabled: true
+  # Must match the region Terraform creates the secrets in (var.region).
+  region: us-east-1
+fake:
+  enabled: true

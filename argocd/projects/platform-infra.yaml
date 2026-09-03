@@ -8,9 +8,14 @@ spec:
   sourceRepos:
     - https://github.com/DaNaHiju/flights-platform-manifests.git
     - https://istio-release.storage.googleapis.com/charts
+    - https://charts.external-secrets.io
   destinations:
     - server: https://kubernetes.default.svc
       namespace: istio-system
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+    - server: https://kubernetes.default.svc
+      namespace: external-secrets
   clusterResourceWhitelist:
     - group: ''
       kind: Namespace
@@ -24,6 +29,8 @@ spec:
       kind: ValidatingWebhookConfiguration
     - group: admissionregistration.k8s.io
       kind: MutatingWebhookConfiguration
+    - group: external-secrets.io
+      kind: ClusterSecretStore
   roles:
     - name: read-only
       description: View-only access to applications in this project
