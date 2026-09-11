@@ -52,6 +52,32 @@ ClusterSecretStores need `SkipDryRunOnMissingResource=true` on first sync.
 - staging: `automated` with prune and selfHeal. Takes changes from main immediately.
 - production: manual sync only, plus a syncWindow blocking weekend syncs.
 
+## State outside Git (solved, do not re-derive)
+- ArgoCD selfHeal does NOT retry a failed sync on the same Git commit. After an
+  automated sync fails, ArgoCD backs off and will not retry until the target
+  revision changes or someone triggers a sync manually. An Application can sit
+  OutOfSync for days with `selfHeal: true` and never retry. Restarting the
+  application-controller does NOT trigger a retry. Force it with:
+    kubectl patch application <name> -n argocd --type merge \
+      -p '{"operation":{"initiatedBy":{"username":"<user>"},"sync":{"revision":"HEAD"}}}'
+- `status.operationState.message` can be days stale — it describes the LAST
+  operation that ran, not the current state. Always check
+  `status.operationState.finishedAt` against current cluster time before trusting
+  the error message. A four-day-old discovery error ("failed to discover server
+  resources for group version external-secrets.io/v1") was read as current and
+  sent the diagnosis down the wrong path. The CRD was Established=True and the
+  API server was serving v1 the whole time.
+- Postgres keeps the ORIGINAL password. initdb only runs on an empty data
+  directory, so the PVC holds the password written to pg_authid at first boot
+  even after ESO rotates the Secret. Fix: delete the PVC, then delete the pod to
+  release the pvc-protection finalizer — the StatefulSet recreates both from
+  volumeClaimTemplates. Evidence initdb actually ran: the log line
+  `Creating user flights` appears only on a fresh data directory.
+  ALTER USER is NOT the fix.
+- Diagnostic order: when an Application is OutOfSync with selfHeal enabled but
+  never converges, check `operationState.finishedAt` FIRST. If it is old, no sync
+  has been attempted and the error message is not evidence about the present.
+
 ## AWS cost discipline — ~$100 credits, not reimbursed
 - Teardown script must exist and be reviewed BEFORE the first `terraform apply`.
 - Flag anything exceeding free tier before running it. Never incur cost silently.
