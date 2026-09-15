@@ -88,3 +88,11 @@ ClusterSecretStores need `SkipDryRunOnMissingResource=true` on first sync.
 ## Hard rules
 - Never run `terraform apply` without asking first.
 - Never `kubectl apply` anything except the two bootstrap files above.
+
+## Layout
+infra/terraform/     EKS, VPC, IAM, ECR, S3+DynamoDB backend
+infra/helm-values/   platform chart overrides
+charts/flights-api/  app Helm chart + values{,-staging,-production}.yaml
+argocd/apps/         Application manifests
+argocd/appsets/      ApplicationSets
+argocd/projects/     AppProjects
