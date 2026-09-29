@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flights-worker-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Workload wave: after the ClusterSecretStores (-1) its ExternalSecret reads.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: platform-apps
+  source:
+    repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+    targetRevision: main
+    path: charts/flights-worker
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-homelab.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: staging
+  # staging: takes changes from main immediately.
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
