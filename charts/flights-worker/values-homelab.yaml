@@ -1,0 +1,12 @@
+config:
+  ENVIRONMENT: staging
+  # Not a secret: internal hostname, no credential (staging Redis has auth off).
+  # MUST match what the flights-api.redisUrl helper composes for the
+  # "flights-api-staging" release: "<release>-redis-master" on port 6379, db 0.
+  # Values files cannot call another chart's helpers, so this is hardcoded.
+  REDIS_URL: "redis://flights-api-staging-redis-master:6379/0"
+
+serviceAccount:
+  create: true
+  imagePullSecrets:
+    - name: ghcr-pull
