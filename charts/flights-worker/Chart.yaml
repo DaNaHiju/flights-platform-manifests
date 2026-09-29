@@ -1,0 +1,6 @@
+apiVersion: v2
+name: flights-worker
+description: Scheduled flights worker (CronJob) sharing the flights-api Redis
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -1,0 +1,44 @@
+image:
+  repository: ghcr.io/danahiju/flights-worker
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+cronjob:
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  restartPolicy: OnFailure
+
+serviceAccount:
+  create: false
+  # Defaults to flights-worker.fullname when create is true, "default" otherwise.
+  name: ""
+  annotations: {}
+  # Rendered on the ServiceAccount; the referenced Secrets must already exist.
+  imagePullSecrets: []
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+# Plain env vars, rendered sorted into the container's env.
+# No DATABASE_URL — the worker does not touch Postgres.
+# REDIS_URL is set per environment (it points at the flights-api release's Redis).
+config:
+  APP_NAME: flights-worker
+  LOG_LEVEL: INFO
