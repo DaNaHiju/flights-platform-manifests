@@ -5,6 +5,13 @@ image:
   tag: "0.1.0"
   pullPolicy: IfNotPresent
 
+serviceAccount:
+  create: true
+  # Defaults to flights-api.fullname when create is true, "default" otherwise.
+  name: ""
+  # Rendered on the ServiceAccount; the referenced Secrets must already exist.
+  imagePullSecrets: []
+
 service:
   type: ClusterIP
   port: 8000
