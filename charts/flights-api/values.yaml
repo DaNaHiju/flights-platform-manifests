@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: flights-api
+  repository: ghcr.io/danahiju/flights-api
   tag: "0.1.0"
   pullPolicy: IfNotPresent
 

@@ -5,6 +5,14 @@
 # disabled and DB_HOST / REDIS_URL would point at RDS and ElastiCache.
 replicaCount: 2
 
+image:
+  tag: "0.1.0"
+
+serviceAccount:
+  # Created by hand per namespace (bootstrap) — see CLAUDE.md, "ghcr-pull".
+  imagePullSecrets:
+    - name: ghcr-pull
+
 config:
   ENVIRONMENT: production
   LOG_LEVEL: INFO
