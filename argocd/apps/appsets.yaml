@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: appsets
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Workload wave: the ApplicationSets generate the workload Applications, which
+    # need the CRDs (-2) and ClusterSecretStores (-1) from the earlier waves.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  # platform-infra, not platform-apps: the ApplicationSet objects live in the
+  # argocd namespace, which only platform-infra lists as a destination.
+  project: platform-infra
+  source:
+    repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+    targetRevision: main
+    # Plain directory of manifests. No `directory: {recurse: false}` block: it is
+    # the default, ArgoCD drops it from the live object, and platform-root would
+    # then report this Application as drifted.
+    path: argocd/appsets
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      # false on purpose: removing a file from argocd/appsets must never delete
+      # the ApplicationSet, and with it every Application it generated.
+      prune: false
+      selfHeal: true
