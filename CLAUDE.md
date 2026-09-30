@@ -15,6 +15,19 @@ kind is NOT used. Never propose it.
   and argocd/projects/platform-infra.yaml. ArgoCD cannot bootstrap the Application
   that manages itself. Merging changes to these files does NOT update the live
   object — they must be re-applied with kubectl.
+- ApplicationSets are NOT an exception: argocd/appsets/ is managed by the
+  Application `appsets` (argocd/apps/appsets.yaml, project `platform-infra`
+  because the objects live in the `argocd` namespace), itself created by
+  platform-root. Merging a change under argocd/appsets/ updates the live
+  ApplicationSet. `appsets` syncs with `prune: false`: deleting a file there
+  does not delete the ApplicationSet.
+- Every ApplicationSet sets `syncPolicy.preserveResourcesOnDeletion: true`. The
+  chain platform-root -> appsets -> ApplicationSet -> Applications -> workloads
+  cascades deletes by default: losing the ApplicationSet (a bad merge, a rename,
+  removing appsets.yaml while platform-root prunes) would delete the generated
+  Applications and, through their finalizer, the Deployments, StatefulSets and
+  PVCs behind them — including the Postgres data. With the flag the generated
+  Applications carry no resources finalizer, so the workloads are left running.
 - AppProjects split by privilege: `platform-infra` holds cluster-scoped resources
   (CRDs, ClusterRoles, webhooks); `platform-apps` holds namespaced workloads.
 - Helm has no environment auto-detection. Values files are selected explicitly.
