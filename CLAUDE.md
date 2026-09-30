@@ -32,6 +32,40 @@ kind is NOT used. Never propose it.
   (CRDs, ClusterRoles, webhooks); `platform-apps` holds namespaced workloads.
 - Helm has no environment auto-detection. Values files are selected explicitly.
 
+## Bootstrap: ghcr-pull (image pull secret, created by hand)
+- `ghcr-pull` is a `kubernetes.io/dockerconfigjson` Secret created manually, ONE
+  PER NAMESPACE that pulls from GHCR (`staging` and `production`). The charts only
+  reference it (`serviceAccount.imagePullSecrets`); they never create it.
+- It is bootstrap, like the two files above, and the third manual exception: ESO
+  cannot deliver it on the homelab, because the `fake-local` provider keeps its
+  values in Git and the token would end up committed.
+- Token: GitHub CLASSIC personal access token with ONLY the `read:packages`
+  scope. GHCR does not support fine-grained tokens. Expiry: 30 days.
+  Next rotation due before 2026-10-30.
+- Rotation procedure (never paste the token into a command, a file or Git):
+  1. Create the new classic token (read:packages only, 30 days), then load it
+     into the shell without echo or history: `read -rs GHCR_TOKEN`
+  2. Verify its scopes — the header must list exactly `read:packages`:
+       curl -sI -H "Authorization: Bearer $GHCR_TOKEN" https://api.github.com/user \
+         | grep -i x-oauth-scopes
+  3. Replace the Secret in EACH namespace (staging, production):
+       kubectl create secret docker-registry ghcr-pull -n <namespace> \
+         --docker-server=ghcr.io --docker-username=<github-user> \
+         --docker-password="$GHCR_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
+  4. Verify with a throwaway pod using imagePullPolicy Always. IfNotPresent
+     proves nothing: it is satisfied from the node's image cache without ever
+     contacting the registry.
+       kubectl run ghcr-pull-test -n <namespace> --restart=Never \
+         --image=ghcr.io/danahiju/flights-api:<tag> --image-pull-policy=Always \
+         --overrides='{"spec":{"imagePullSecrets":[{"name":"ghcr-pull"}]}}' \
+         --command -- true
+       kubectl describe pod ghcr-pull-test -n <namespace>   # "Successfully pulled image"
+       kubectl delete pod ghcr-pull-test -n <namespace>
+  5. Revoke the old token in GitHub, `unset GHCR_TOKEN`, and update the
+     rotation date above.
+- Does NOT apply on EKS: images come from ECR and the node IAM role grants the
+  pull. No pull secret; leave `serviceAccount.imagePullSecrets` empty there.
+
 ## Istio — webhook drift (solved, do not re-derive)
 - TWO separate ValidatingWebhookConfigurations drift, not one:
     istio-base -> istiod-default-validator
@@ -100,7 +134,8 @@ ClusterSecretStores need `SkipDryRunOnMissingResource=true` on first sync.
 
 ## Hard rules
 - Never run `terraform apply` without asking first.
-- Never `kubectl apply` anything except the two bootstrap files above.
+- Never `kubectl apply` anything except the two bootstrap files above and the
+  `ghcr-pull` Secret (see "Bootstrap: ghcr-pull").
 
 ## Layout
 infra/terraform/     EKS, VPC, IAM, ECR, S3+DynamoDB backend
