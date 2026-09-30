@@ -6,6 +6,10 @@ metadata:
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
+  syncPolicy:
+    # If this ApplicationSet (or a generated Application) is deleted, leave the
+    # workloads it deployed running instead of cascading the delete to them.
+    preserveResourcesOnDeletion: true
   generators:
     - list:
         elements:
