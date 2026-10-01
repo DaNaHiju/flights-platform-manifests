@@ -15,6 +15,18 @@ kind is NOT used. Never propose it.
   and argocd/projects/platform-infra.yaml. ArgoCD cannot bootstrap the Application
   that manages itself. Merging changes to these files does NOT update the live
   object — they must be re-applied with kubectl.
+- platform-infra.yaml stays a bootstrap exception ON PURPOSE. platform-root (and
+  every Application under argocd/apps/) runs under platform-infra. If ArgoCD
+  managed it, a bad commit could remove a destination or resource kind that
+  platform-root needs, and platform-root could then no longer sync the commit
+  that fixes it — only a manual `kubectl apply` would recover.
+- The AppProject platform-apps is NOT an exception: it is managed by the
+  Application `projects` (argocd/apps/projects.yaml, project `platform-infra`),
+  whose `directory.include` selects ONLY platform-apps.yaml, so platform-infra.yaml
+  is never picked up by accident. `prune: false`: deleting the file does not
+  delete the AppProject. Adopting it corrects drift: Git had the syncWindow
+  `timeZone: Asia/Jerusalem` but the hand-applied live object did not, so the
+  weekend deny window was evaluated in UTC until the first sync of `projects`.
 - ApplicationSets are NOT an exception: argocd/appsets/ is managed by the
   Application `appsets` (argocd/apps/appsets.yaml, project `platform-infra`
   because the objects live in the `argocd` namespace), itself created by
