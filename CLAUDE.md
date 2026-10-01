@@ -15,6 +15,18 @@ kind is NOT used. Never propose it.
   and argocd/projects/platform-infra.yaml. ArgoCD cannot bootstrap the Application
   that manages itself. Merging changes to these files does NOT update the live
   object — they must be re-applied with kubectl.
+- platform-infra.yaml stays a bootstrap exception ON PURPOSE. platform-root (and
+  every Application under argocd/apps/) runs under platform-infra. If ArgoCD
+  managed it, a bad commit could remove a destination or resource kind that
+  platform-root needs, and platform-root could then no longer sync the commit
+  that fixes it — only a manual `kubectl apply` would recover.
+- The AppProject platform-apps is NOT an exception: it is managed by the
+  Application `projects` (argocd/apps/projects.yaml, project `platform-infra`),
+  whose `directory.include` selects ONLY platform-apps.yaml, so platform-infra.yaml
+  is never picked up by accident. `prune: false`: deleting the file does not
+  delete the AppProject. Adopting it corrects drift: Git had the syncWindow
+  `timeZone: Asia/Jerusalem` but the hand-applied live object did not, so the
+  weekend deny window was evaluated in UTC until the first sync of `projects`.
 - ApplicationSets are NOT an exception: argocd/appsets/ is managed by the
   Application `appsets` (argocd/apps/appsets.yaml, project `platform-infra`
   because the objects live in the `argocd` namespace), itself created by
@@ -28,6 +40,14 @@ kind is NOT used. Never propose it.
   Applications and, through their finalizer, the Deployments, StatefulSets and
   PVCs behind them — including the Postgres data. With the flag the generated
   Applications carry no resources finalizer, so the workloads are left running.
+- ArgoCD configuration Applications: the Applications that manage ArgoCD's own
+  configuration objects (`projects` -> AppProjects, `appsets` -> ApplicationSets)
+  do NOT carry `resources-finalizer.argocd.argoproj.io`. What they manage is a
+  dependency of OTHER Applications: with the finalizer, deleting the managing
+  Application (e.g. platform-root pruning a removed argocd/apps/ file) would
+  cascade-delete the AppProject or ApplicationSet and leave every Application
+  that depends on it unable to sync. Workload Applications (charts, Istio, ESO)
+  DO carry the finalizer, so deleting them cleans up what they deployed.
 - AppProjects split by privilege: `platform-infra` holds cluster-scoped resources
   (CRDs, ClusterRoles, webhooks); `platform-apps` holds namespaced workloads.
 - Helm has no environment auto-detection. Values files are selected explicitly.

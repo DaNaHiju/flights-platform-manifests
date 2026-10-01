@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: projects
+  namespace: argocd
+  # No resources-finalizer: the AppProject is a dependency of other
+  # Applications. See CLAUDE.md, "ArgoCD configuration Applications".
+  annotations:
+    # Before the workload Applications (0) that run under platform-apps.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  # platform-infra, not platform-apps: AppProjects live in the argocd namespace,
+  # which only platform-infra lists as a destination.
+  project: platform-infra
+  source:
+    repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+    targetRevision: main
+    path: argocd/projects
+    directory:
+      # ONLY platform-apps. platform-infra.yaml stays a manually applied bootstrap
+      # file: platform-root and this Application run under platform-infra, so if
+      # ArgoCD managed it, a bad commit could strip the permissions needed to
+      # sync the fix.
+      include: platform-apps.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      # false on purpose: removing or renaming platform-apps.yaml must never
+      # delete the AppProject that every workload Application depends on.
+      prune: false
+      selfHeal: true
