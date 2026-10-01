@@ -1,9 +1,16 @@
 replicaCount: 1
 
 image:
-  repository: flights-api
+  repository: ghcr.io/danahiju/flights-api
   tag: "0.1.0"
   pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  # Defaults to flights-api.fullname when create is true, "default" otherwise.
+  name: ""
+  # Rendered on the ServiceAccount; the referenced Secrets must already exist.
+  imagePullSecrets: []
 
 service:
   type: ClusterIP

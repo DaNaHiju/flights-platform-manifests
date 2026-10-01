@@ -31,9 +31,6 @@ spec:
           valueFiles:
             - values.yaml
             - 'values-{{.env}}.yaml'
-          parameters:
-            - name: image.tag
-              value: local
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{.env}}'

@@ -1,3 +1,11 @@
+image:
+  tag: "0.1.0"
+
+serviceAccount:
+  # Created by hand per namespace (bootstrap) — see CLAUDE.md, "ghcr-pull".
+  imagePullSecrets:
+    - name: ghcr-pull
+
 config:
   ENVIRONMENT: staging
   DB_HOST: flights-api-postgresql
