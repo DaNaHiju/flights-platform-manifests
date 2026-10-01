@@ -40,6 +40,14 @@ kind is NOT used. Never propose it.
   Applications and, through their finalizer, the Deployments, StatefulSets and
   PVCs behind them — including the Postgres data. With the flag the generated
   Applications carry no resources finalizer, so the workloads are left running.
+- ArgoCD configuration Applications: the Applications that manage ArgoCD's own
+  configuration objects (`projects` -> AppProjects, `appsets` -> ApplicationSets)
+  do NOT carry `resources-finalizer.argocd.argoproj.io`. What they manage is a
+  dependency of OTHER Applications: with the finalizer, deleting the managing
+  Application (e.g. platform-root pruning a removed argocd/apps/ file) would
+  cascade-delete the AppProject or ApplicationSet and leave every Application
+  that depends on it unable to sync. Workload Applications (charts, Istio, ESO)
+  DO carry the finalizer, so deleting them cleans up what they deployed.
 - AppProjects split by privilege: `platform-infra` holds cluster-scoped resources
   (CRDs, ClusterRoles, webhooks); `platform-apps` holds namespaced workloads.
 - Helm has no environment auto-detection. Values files are selected explicitly.

@@ -3,8 +3,8 @@ kind: Application
 metadata:
   name: appsets
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
+  # No resources-finalizer: the ApplicationSets are a dependency of other
+  # Applications. See CLAUDE.md, "ArgoCD configuration Applications".
   annotations:
     # Workload wave: the ApplicationSets generate the workload Applications, which
     # need the CRDs (-2) and ClusterSecretStores (-1) from the earlier waves.
