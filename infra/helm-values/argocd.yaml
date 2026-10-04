@@ -6,3 +6,85 @@
 configs:
   params:
     server.insecure: true
+
+# Protect the CRDs ArgoCD depends on to run at all: a prune/delete here would
+# take ArgoCD itself down and nothing could sync the fix. Keep the chart's
+# default ServerSideApply=true (large CRD schemas need it) and add Prune=false
+# and Delete=false to the same sync-options annotation.
+crds:
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true,Prune=false,Delete=false
+
+# repo-server has 130 restarts (liveness /healthz?full=true, timeoutSeconds 1):
+# one slow git/helm render under load trips liveness and kills the pod mid-work.
+# 2 replicas tolerate one restarting/busy pod without blocking syncs. No CPU
+# limit: throttling would make renders slower and more likely to fail the
+# probe, the opposite of what we want.
+repoServer:
+  replicas: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  livenessProbe:
+    timeoutSeconds: 5
+
+# 2 replicas so the UI/API survive one pod restarting. No CPU limit, same
+# reasoning as repo-server.
+server:
+  replicas: 2
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+# Stays at 1 replica: it's a StatefulSet, and adding replicas shards managed
+# clusters across them instead of just adding redundancy — not useful with a
+# single cluster to manage. No CPU limit, same reasoning as repo-server.
+controller:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+# Single node, single Redis instance (redis-ha stays off): only a memory limit
+# matters here, to cap how much cache growth can take from the node.
+redis:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+# Light, mostly-idle components: enough to stop them floating as BestEffort
+# and competing for memory under node pressure.
+applicationSet:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+notifications:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+dex:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi

@@ -23,6 +23,13 @@ spec:
     server: https://kubernetes.default.svc
     namespace: argocd
   syncPolicy:
+    automated:
+      # Reverts manual edits to argocd-cm and friends — that drift is exactly
+      # what this phase is closing.
+      selfHeal: true
+      # A resource disappearing from the render (bad merge, wrong branch)
+      # must not delete it from the cluster on its own.
+      prune: false
     syncOptions:
       # The Application CRD exceeds the client-side-apply annotation size limit.
       - ServerSideApply=true
