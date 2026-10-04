@@ -10,3 +10,10 @@ serviceAccount:
   create: true
   imagePullSecrets:
     - name: ghcr-pull
+
+# Excluded from the mesh for a different reason than Postgres/Redis (those are
+# protocol/clustering): a CronJob's sidecar never exits when the main
+# container finishes, so the Job would hang short of Completed. Not worth
+# solving for a short-lived scheduled task with no inbound traffic.
+podAnnotations:
+  sidecar.istio.io/inject: "false"
