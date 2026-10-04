@@ -11,6 +11,8 @@ cronjob:
   failedJobsHistoryLimit: 3
   restartPolicy: OnFailure
 
+podAnnotations: {}
+
 serviceAccount:
   create: false
   # Defaults to flights-worker.fullname when create is true, "default" otherwise.

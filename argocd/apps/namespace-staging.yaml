@@ -1,0 +1,15 @@
+# Adopts the `staging` namespace: it was created by hand (plain `kubectl
+# create namespace`, no manifest, no CreateNamespace=true anywhere) and
+# nothing has managed it from Git until now. Not attached to a workload
+# Application (flights-api-staging, flights-worker-staging) on purpose: the
+# namespace outlives any one workload, and `production` will get the same
+# treatment as its own file here in Phase 3.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+  labels:
+    # Puts every pod in this namespace into the Istio mesh. Postgres, Redis
+    # and the flights-worker CronJob opt back out via per-workload
+    # sidecar.istio.io/inject annotations — see their own values files.
+    istio-injection: enabled

@@ -13,6 +13,12 @@ config:
 
 postgresql:
   enabled: true
+  primary:
+    # Excluded from the mesh: Postgres speaks its own wire protocol and
+    # already has its own transport security; a sidecar adds nothing here
+    # and complicates startup ordering for no benefit.
+    podAnnotations:
+      sidecar.istio.io/inject: "false"
   auth:
     database: flights
     username: flights
@@ -36,6 +42,15 @@ postgresql:
 
 redis:
   enabled: true
+  # Excluded from the mesh: Redis replication is its own protocol and the
+  # master/replicas already cluster directly with each other; a sidecar adds
+  # nothing here and complicates startup ordering for no benefit.
+  master:
+    podAnnotations:
+      sidecar.istio.io/inject: "false"
+  replica:
+    podAnnotations:
+      sidecar.istio.io/inject: "false"
 
 # Assignment 5.1: the ExternalSecret -> Secret -> envFrom chain is exercised in
 # staging too, not only production. k3s has no EKS OIDC provider, so IRSA and the
