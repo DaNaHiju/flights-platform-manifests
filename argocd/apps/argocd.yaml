@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  # No resources-finalizer: this is an ArgoCD configuration Application (it
+  # manages ArgoCD itself), same reasoning as projects/appsets — deleting this
+  # Application must not cascade-delete the ArgoCD installation it depends on.
+spec:
+  project: platform-infra
+  sources:
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      targetRevision: 10.3.3
+      helm:
+        releaseName: argocd
+        valueFiles:
+          - $values/infra/helm-values/argocd.yaml
+    - repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    syncOptions:
+      # The Application CRD exceeds the client-side-apply annotation size limit.
+      - ServerSideApply=true
+      # Without this, ignoreDifferences only hides the diff: a sync would still
+      # apply the Git version over the fields argocd-server owns.
+      - RespectIgnoreDifferences=true
+  # argocd-server writes admin.password, admin.passwordMtime and
+  # server.secretkey into this Secret at runtime; the chart renders it with no
+  # data. Same pattern as the Istio webhook caBundle: ignore by field manager
+  # instead of enumerating keys that can change between versions.
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: argocd-secret
+      managedFieldsManagers:
+        - argocd-server
