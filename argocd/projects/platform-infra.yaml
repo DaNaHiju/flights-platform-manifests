@@ -9,6 +9,7 @@ spec:
     - https://github.com/DaNaHiju/flights-platform-manifests.git
     - https://istio-release.storage.googleapis.com/charts
     - https://charts.external-secrets.io
+    - https://argoproj.github.io/argo-helm
   destinations:
     - server: https://kubernetes.default.svc
       namespace: istio-system
