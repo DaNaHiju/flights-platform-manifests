@@ -1,0 +1,8 @@
+# Helm values for the argocd Application (argocd/apps/argocd.yaml).
+
+# Matches the manual `helm install` this adopts byte-for-byte: insecure mode
+# so the server terminates TLS at the Ingress/LB instead of itself. This is
+# the only non-default value the live release carries.
+configs:
+  params:
+    server.insecure: true
