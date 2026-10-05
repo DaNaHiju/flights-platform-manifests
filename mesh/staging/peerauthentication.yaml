@@ -1,0 +1,24 @@
+# Requires mTLS for every sidecar-injected workload in `staging`. Lives at
+# namespace level, not in the flights-api chart: it is a property of the
+# namespace, and a second meshed service must get it without each chart
+# re-declaring (or quietly dropping) it. Applied by the `mesh-staging`
+# Application, not platform-root: platform-root runs under platform-infra,
+# which has no `staging` destination.
+#
+# Only affects inbound traffic to pods WITH a sidecar (today: flights-api).
+# Postgres, Redis and flights-worker opt out of injection, so they keep
+# accepting plaintext, and auto-mTLS (on by default since Istio 1.5) sends
+# them plaintext from flights-api. No DestinationRule needed — adding one with
+# a `tls` block would override auto-mTLS.
+#
+# Rejected after this: any client without a sidecar calling flights-api
+# (connection reset). HTTP probes are unaffected: Istio rewrites them to
+# pilot-agent on 15020.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: staging
+spec:
+  mtls:
+    mode: STRICT
