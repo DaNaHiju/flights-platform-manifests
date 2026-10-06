@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mesh-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Workload wave: after istio-base (-2) has installed the security.istio.io CRDs.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  # platform-apps, not platform-infra: these are namespaced objects in
+  # `staging`, which only platform-apps has as a destination.
+  project: platform-apps
+  source:
+    repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+    targetRevision: main
+    path: mesh/staging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: staging
+  # prune: false — removing a policy file from Git leaves the live policy in
+  # place; dropping mTLS or an AuthorizationPolicy must be a deliberate
+  # `kubectl delete`, not a side effect of a merge.
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
