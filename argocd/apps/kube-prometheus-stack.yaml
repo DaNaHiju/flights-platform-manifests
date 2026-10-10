@@ -1,0 +1,54 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Same wave as istio-base and external-secrets: this Application ships the
+    # monitoring.coreos.com CRDs (ServiceMonitor, PrometheusRule, ...) that
+    # later Applications may depend on.
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  project: platform-infra
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 92.3.0
+      helm:
+        # releaseName fixes the Grafana Secret name referenced in
+        # ignoreDifferences below (<release>-grafana).
+        releaseName: kube-prometheus-stack
+        valueFiles:
+          - $values/infra/helm-values/kube-prometheus-stack.yaml
+    - repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # No Istio injection label on purpose: the namespace is created bare.
+      - CreateNamespace=true
+      # The monitoring.coreos.com CRDs exceed the client-side-apply annotation
+      # size limit.
+      - ServerSideApply=true
+      # Without this, ignoreDifferences only hides the diff: a sync would still
+      # apply the Git-rendered password over the live one.
+      - RespectIgnoreDifferences=true
+  # The Grafana subchart renders admin-password with randAlphaNum, and
+  # ArgoCD renders with `helm template`, where `lookup` does not exist, so
+  # every render produces a different value. Without this the Secret is
+  # permanently OutOfSync and selfHeal rewrites a password Grafana already
+  # initialised with. The first sync creates it; later syncs leave it alone.
+  ignoreDifferences:
+    - kind: Secret
+      name: kube-prometheus-stack-grafana
+      namespace: monitoring
+      jsonPointers:
+        - /data/admin-password
