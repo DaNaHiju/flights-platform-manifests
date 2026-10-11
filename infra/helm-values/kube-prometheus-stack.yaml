@@ -40,9 +40,18 @@ grafana:
   resources:
     requests:
       cpu: 50m
-      memory: 128Mi
+      memory: 192Mi
     limits:
-      memory: 256Mi
+      memory: 384Mi
+  # Applies to both sidecars (dashboards and datasources). Without it they have
+  # no requests or limits.
+  sidecar:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
 
 alertmanager:
   enabled: true
