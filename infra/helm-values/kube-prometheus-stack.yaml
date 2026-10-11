@@ -67,6 +67,11 @@ prometheusOperator:
   # no longer validated on admission.
   admissionWebhooks:
     enabled: false
+  # The operator's TLS cert/key come from the Secret <release>-admission, which
+  # only the admissionWebhooks patch job creates. With the webhooks off nothing
+  # creates it, so the pod would stay in ContainerCreating. Serve plain HTTP.
+  tls:
+    enabled: false
 
 kube-state-metrics:
   resources:
