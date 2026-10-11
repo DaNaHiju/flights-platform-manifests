@@ -94,3 +94,8 @@ kubeControllerManager:
   enabled: false
 kubeProxy:
   enabled: false
+
+# Its headless Service lives in kube-system, which platform-infra does not
+# allow as a destination. Cost: no CoreDNS scrape target.
+coreDns:
+  enabled: false
