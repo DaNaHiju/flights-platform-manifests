@@ -52,3 +52,12 @@ spec:
       namespace: monitoring
       jsonPointers:
         - /data/admin-password
+    # Its checksum/secret pod-template annotation hashes that Secret, so the
+    # random password also changes it on every render; ignoring only the Secret
+    # would still roll Grafana (a new ReplicaSet) on each re-render. ~1 is "/".
+    - group: apps
+      kind: Deployment
+      name: kube-prometheus-stack-grafana
+      namespace: monitoring
+      jsonPointers:
+        - /spec/template/metadata/annotations/checksum~1secret
