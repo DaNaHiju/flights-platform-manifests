@@ -11,7 +11,9 @@ prometheus:
         cpu: 100m
         memory: 384Mi
       limits:
-        memory: 1Gi
+        # Raised from 1Gi: RSS was ~1.025GB (~107k series) before the Istio
+        # scrape, leaving no headroom for the Envoy and istiod series.
+        memory: 1536Mi
     retention: 2d
     # Below the 5Gi PVC so Prometheus trims data before the volume fills.
     retentionSize: 2GB
@@ -28,6 +30,68 @@ prometheus:
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
     ruleSelectorNilUsesHelmValues: false
+
+  # Istio scraping. Both objects are rendered into the release namespace
+  # (monitoring); they only SELECT pods/services in staging and istio-system.
+  # The pod selector below is Istio's official one, so it needs no per-app label.
+  additionalPodMonitors:
+    # Official Istio PodMonitor (samples/addons/extras/prometheus-operator.yaml),
+    # kept as-is apart from the namespaceSelector. The address comes from the
+    # pod annotation prometheus.io/port (15020, pilot-agent merged metrics),
+    # not from a named container port.
+    - name: envoy-stats
+      jobLabel: envoy-stats
+      namespaceSelector:
+        matchNames:
+          - staging
+          - istio-system
+      selector:
+        matchExpressions:
+          - {key: istio-prometheus-ignore, operator: DoesNotExist}
+      podMetricsEndpoints:
+        - path: /stats/prometheus
+          interval: 15s
+          relabelings:
+            - action: keep
+              sourceLabels: [__meta_kubernetes_pod_container_name]
+              regex: "istio-proxy"
+            - action: keep
+              sourceLabels: [__meta_kubernetes_pod_annotationpresent_prometheus_io_scrape]
+            - action: replace
+              regex: (\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
+              replacement: '[$2]:$1'
+              sourceLabels:
+                - __meta_kubernetes_pod_annotation_prometheus_io_port
+                - __meta_kubernetes_pod_ip
+              targetLabel: __address__
+            - action: replace
+              regex: (\d+);((([0-9]+?)(\.|$)){4})
+              replacement: $2:$1
+              sourceLabels:
+                - __meta_kubernetes_pod_annotation_prometheus_io_port
+                - __meta_kubernetes_pod_ip
+              targetLabel: __address__
+            - action: labeldrop
+              regex: "__meta_kubernetes_pod_label_(.+)"
+            - sourceLabels: [__meta_kubernetes_namespace]
+              action: replace
+              targetLabel: namespace
+            - sourceLabels: [__meta_kubernetes_pod_name]
+              action: replace
+              targetLabel: pod_name
+  additionalServiceMonitors:
+    # Official Istio ServiceMonitor for istiod (port http-monitoring = 15014).
+    - name: istiod
+      jobLabel: istio
+      namespaceSelector:
+        matchNames:
+          - istio-system
+      selector:
+        matchLabels:
+          istio: pilot
+      endpoints:
+        - port: http-monitoring
+          interval: 15s
 
 grafana:
   # No password in Git: the chart generates a random admin password into the
