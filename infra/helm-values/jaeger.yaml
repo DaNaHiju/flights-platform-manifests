@@ -1,0 +1,16 @@
+# Jaeger v2 all-in-one: with no `userconfig` the chart runs the binary's built-in
+# all-in-one config (OTLP receiver on 4317/4318, UI on 16686, in-memory storage).
+# Traces are lost on restart; fine for learning, not for production.
+jaeger:
+  extraEnv:
+    # Makes the Go GC work against a soft ceiling below the container limit, so a
+    # growing in-memory trace store is collected instead of being OOMKilled.
+    - name: GOMEMLIMIT
+      value: 400MiB
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi

@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jaeger
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # Requires https://jaegertracing.github.io/helm-charts in platform-infra
+  # sourceRepos (argocd/projects/platform-infra.yaml, re-applied by hand).
+  project: platform-infra
+  sources:
+    - repoURL: https://jaegertracing.github.io/helm-charts
+      chart: jaeger
+      targetRevision: 4.16.1
+      helm:
+        # releaseName fixes the Service name: jaeger.monitoring.svc, referenced by
+        # the Istio extensionProvider in argocd/apps/istiod.yaml.
+        releaseName: jaeger
+        valueFiles:
+          - $values/infra/helm-values/jaeger.yaml
+    - repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

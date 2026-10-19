@@ -1,0 +1,14 @@
+# Mesh-wide default: Telemetry in the root namespace (istio-system) with no
+# selector applies to every sidecar and gateway in the mesh.
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: mesh-default
+  namespace: istio-system
+spec:
+  tracing:
+    - providers:
+        - name: jaeger
+      # 10% of requests start a trace: enough to see the flow in a homelab, cheap
+      # for the in-memory Jaeger store.
+      randomSamplingPercentage: 10

@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mesh-telemetry
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # After istio-base (-2) installed the telemetry.istio.io CRD and istiod (-1)
+    # knows the `jaeger` extension provider.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  # platform-infra: istio-system is a destination there; Telemetry is namespaced.
+  project: platform-infra
+  source:
+    repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+    targetRevision: main
+    path: mesh/istio-system
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  # prune: false — same reasoning as mesh-staging: removing the file from Git must
+  # not silently change mesh-wide tracing; that is a deliberate `kubectl delete`.
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
