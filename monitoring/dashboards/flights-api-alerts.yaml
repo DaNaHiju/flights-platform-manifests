@@ -1,0 +1,38 @@
+# Alertas de flights-api (staging). Las toma kube-prometheus-stack porque
+# ruleSelectorNilUsesHelmValues=false; el Application grafana-dashboards sincroniza
+# este directorio, así que no hace falta otro Application.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: flights-api-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: flights-api
+      rules:
+        # Proporción de respuestas 5xx sobre el total de requests que llegan a
+        # flights-api-staging (métricas Istio, ventana de 5m). `or vector(0)` da 0
+        # en vez de "sin datos" cuando no hay errores. Sin tráfico el cociente es
+        # NaN y no dispara. Umbral: más de 1% de errores.
+        - alert: FlightsApiHighErrorRate
+          expr: |
+            (sum(rate(istio_requests_total{destination_workload="flights-api-staging",response_code=~"5.."}[5m])) or vector(0))
+            /
+            sum(rate(istio_requests_total{destination_workload="flights-api-staging"}[5m]))
+            > 0.01
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "flights-api tiene más de 1% de errores 5xx"
+            description: "Más del 1% de las respuestas de flights-api-staging fueron 5xx durante 5 minutos; revisá los logs de la API y del sidecar y el dashboard flights-api RED."
+        # Réplicas disponibles del Deployment flights-api-staging según
+        # kube-state-metrics. Con 0 la API no atiende ningún request.
+        - alert: FlightsApiDown
+          expr: kube_deployment_status_replicas_available{namespace="staging",deployment="flights-api-staging"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "flights-api no tiene réplicas disponibles"
+            description: "El Deployment flights-api-staging no tiene réplicas disponibles hace 1 minuto; revisá los pods en el namespace staging (kubectl describe, eventos, pull de imagen)."
