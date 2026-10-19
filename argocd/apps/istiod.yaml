@@ -30,6 +30,13 @@ spec:
             enabled: true
         meshConfig:
           accessLogFile: /dev/stdout
+          # Where sidecars send spans. Telemetry (mesh/istio-system) selects it by
+          # name; OTLP/gRPC to the Jaeger all-in-one collector in `monitoring`.
+          extensionProviders:
+            - name: jaeger
+              opentelemetry:
+                service: jaeger.monitoring.svc.cluster.local
+                port: 4317
   destination:
     server: https://kubernetes.default.svc
     namespace: istio-system
