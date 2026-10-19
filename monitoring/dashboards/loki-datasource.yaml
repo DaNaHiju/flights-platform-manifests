@@ -1,0 +1,21 @@
+# Loki datasource, provisioned by the grafana-sc-datasources sidecar of
+# kube-prometheus-stack through the grafana_datasource label (no change to its
+# values needed).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasource-loki
+  namespace: monitoring
+  labels:
+    grafana_datasource: "1"
+data:
+  loki-datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Loki
+        # Fixed uid so dashboards and Explore links can reference it.
+        uid: loki
+        type: loki
+        access: proxy
+        url: http://loki.monitoring.svc.cluster.local:3100
+        isDefault: false

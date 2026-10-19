@@ -1,0 +1,69 @@
+# Helm values for the loki Application (argocd/apps/loki.yaml).
+#
+# Educational log storage on a single-node homelab: one Loki process, local
+# filesystem, 24h retention, explicit small limits.
+
+# One process instead of read/write/backend; the chart default (SimpleScalable)
+# needs object storage and several pods.
+deploymentMode: SingleBinary
+
+loki:
+  # Single tenant: Alloy and Grafana need no X-Scope-OrgID header.
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  # The chart requires an explicit schema when useTestSchema is false.
+  schemaConfig:
+    configs:
+      - from: "2024-04-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+  limits_config:
+    # Logs older than 24h are deleted by the compactor below.
+    retention_period: 24h
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem
+
+singleBinary:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 192Mi
+    limits:
+      memory: 512Mi
+  persistence:
+    size: 2Gi
+
+# SimpleScalable components off: replicas 0 (this chart does not take enabled).
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+
+# Not needed for Grafana -> Loki inside the cluster; Grafana talks to the Service.
+gateway:
+  enabled: false
+# Caches are memcached pods that would cost RAM for no benefit at this volume.
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+# The canary generates synthetic log traffic only useful to monitor production Loki.
+lokiCanary:
+  enabled: false
+# helm test pod, not used with ArgoCD.
+test:
+  enabled: false
+# Bundled MinIO is for object-storage modes; filesystem needs none.
+minio:
+  enabled: false
