@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # Needs https://grafana.github.io/helm-charts in platform-infra sourceRepos
+  # (see branch feat/platform-infra-chart-repos).
+  project: platform-infra
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: loki
+      targetRevision: 7.3.0
+      helm:
+        # releaseName fixes the Service/resource names: loki.monitoring.svc is the URL used by alloy and the Grafana datasource.
+        releaseName: loki
+        valueFiles:
+          - $values/infra/helm-values/loki.yaml
+    - repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
