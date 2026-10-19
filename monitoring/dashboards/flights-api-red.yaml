@@ -1,0 +1,165 @@
+# Dashboard "flights-api RED", loaded by the grafana-sc-dashboard sidecar of
+# kube-prometheus-stack through the grafana_dashboard label. Istio metrics only
+# (plus cAdvisor for memory). JSON cannot hold comments, so what each query
+# measures is documented here and in each panel's `description`:
+#   Request rate           - requests/s reaching flights-api-staging (5m rate, all codes).
+#   Error rate %           - share of 5xx responses over total requests; `or vector(0)`
+#                            yields 0 instead of "no data" when there are no errors.
+#   Latencia p95           - 95th percentile of request duration in ms, from the Istio histogram.
+#   Memoria por contenedor - working set memory per container (app and istio-proxy) of the pods.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-flights-api-red
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  flights-api-red.json: |
+      {
+        "uid": "flights-api-red",
+        "title": "flights-api RED",
+        "schemaVersion": 39,
+        "version": 1,
+        "editable": true,
+        "refresh": "30s",
+        "time": {
+          "from": "now-15m",
+          "to": "now"
+        },
+        "tags": [
+          "flights-api",
+          "istio"
+        ],
+        "panels": [
+          {
+            "id": 1,
+            "type": "timeseries",
+            "title": "Request rate",
+            "description": "Peticiones por segundo que recibe flights-api-staging (tasa de 5m, suma de todos los códigos).",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 0
+            },
+            "fieldConfig": {
+              "defaults": {
+                "unit": "reqps"
+              },
+              "overrides": []
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "prometheus"
+                },
+                "expr": "sum(rate(istio_requests_total{destination_workload=\"flights-api-staging\"}[5m]))",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "type": "timeseries",
+            "title": "Error rate %",
+            "description": "Porcentaje de peticiones con respuesta 5xx sobre el total; 'or vector(0)' da 0 cuando no hubo errores.",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 0
+            },
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent"
+              },
+              "overrides": []
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "prometheus"
+                },
+                "expr": "(sum(rate(istio_requests_total{destination_workload=\"flights-api-staging\",response_code=~\"5..\"}[5m])) or vector(0)) / sum(rate(istio_requests_total{destination_workload=\"flights-api-staging\"}[5m])) * 100",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "type": "timeseries",
+            "title": "Latencia p95",
+            "description": "Percentil 95 de la duración de las peticiones en milisegundos, calculado desde el histograma de Istio.",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 8
+            },
+            "fieldConfig": {
+              "defaults": {
+                "unit": "ms"
+              },
+              "overrides": []
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "prometheus"
+                },
+                "expr": "histogram_quantile(0.95, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_workload=\"flights-api-staging\"}[5m])))",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "type": "timeseries",
+            "title": "Memoria por contenedor",
+            "description": "Working set de memoria de cada contenedor de los pods flights-api-staging (app y sidecar istio-proxy).",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 8
+            },
+            "fieldConfig": {
+              "defaults": {
+                "unit": "bytes"
+              },
+              "overrides": []
+            },
+            "targets": [
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "prometheus"
+                },
+                "expr": "sum by (container) (container_memory_working_set_bytes{pod=~\"flights-api-staging-[a-z0-9]+-[a-z0-9]+\", container!=\"\"})",
+                "refId": "A",
+                "legendFormat": "{{container}}"
+              }
+            ]
+          }
+        ]
+      }

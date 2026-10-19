@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-dashboards
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # platform-infra: `monitoring` is a destination there, and ConfigMaps are
+  # namespaced so no clusterResourceWhitelist entry is needed.
+  project: platform-infra
+  source:
+    repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+    targetRevision: main
+    path: monitoring/dashboards
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
