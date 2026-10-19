@@ -11,6 +11,10 @@ spec:
     - https://charts.external-secrets.io
     - https://argoproj.github.io/argo-helm
     - https://prometheus-community.github.io/helm-charts
+    # Loki and Alloy charts (log stack in monitoring).
+    - https://grafana.github.io/helm-charts
+    # Jaeger chart (tracing in monitoring).
+    - https://jaegertracing.github.io/helm-charts
   destinations:
     - server: https://kubernetes.default.svc
       namespace: istio-system
