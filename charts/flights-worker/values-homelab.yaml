@@ -1,5 +1,7 @@
 config:
   ENVIRONMENT: staging
+  # Must exceed the CronJob interval (6 h = 21600 s) or /deals expires between runs.
+  DEALS_CACHE_TTL: "25200"
   # Not a secret: internal hostname, no credential (staging Redis has auth off).
   # MUST match what the flights-api.redisUrl helper composes for the
   # "flights-api-staging" release: "<release>-redis-master" on port 6379, db 0.
