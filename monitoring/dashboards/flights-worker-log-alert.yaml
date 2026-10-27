@@ -1,0 +1,31 @@
+# Loki ruler alert for the flights-worker CronJob. Loaded by the loki-sc-rules
+# sidecar (label loki_rule, namespace monitoring) into /rules/fake: "fake" is the
+# tenant Loki uses when auth_enabled is false. The ruler reads that directory
+# (infra/helm-values/loki.yaml) and sends firing alerts to Alertmanager.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-rules-flights-worker
+  namespace: monitoring
+  labels:
+    loki_rule: "1"
+  annotations:
+    k8s-sidecar-target-directory: /rules/fake
+data:
+  flights-worker.yaml: |
+    groups:
+      - name: flights-worker
+        rules:
+          - alert: FlightsWorkerNoDeals
+            # 7h = the CronJob's 6h interval plus a margin. The match is the
+            # worker's log line "Refreshed 0 deals from <origin>".
+            expr: sum(count_over_time({namespace="staging", app="flights-worker"} |= "Refreshed 0 deals" [7h])) > 0
+            labels:
+              severity: warning
+              namespace: staging
+            annotations:
+              summary: flights-worker refreshed 0 deals
+              description: >-
+                The provider (Google, through fli) returned no data in the last
+                worker run. deals:top in Redis keeps the last good value, so
+                GET /deals still serves it until its TTL expires.
