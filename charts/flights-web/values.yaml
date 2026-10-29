@@ -2,7 +2,7 @@ image:
   repository: ghcr.io/danahiju/flights-web
   # Placeholder: no image with this tag exists. The CI of the app repo replaces
   # it with sha-<commit> on the first merge, so ImagePullBackOff until then.
-  tag: "bootstrap"
+  tag: "sha-2454b1f"
   pullPolicy: IfNotPresent
 
 replicaCount: 1
