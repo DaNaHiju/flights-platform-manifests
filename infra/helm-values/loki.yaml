@@ -30,6 +30,18 @@ loki:
   compactor:
     retention_enabled: true
     delete_request_store: filesystem
+  # The ruler already runs inside the single binary. Two things were missing:
+  # it read /var/loki/rules while the loki-sc-rules sidecar writes to /rules, and
+  # it had no Alertmanager to send to. Rules arrive as ConfigMaps labelled
+  # loki_rule (see monitoring/dashboards/flights-worker-log-alert.yaml).
+  rulerConfig:
+    storage:
+      type: local
+      local:
+        directory: /rules
+    wal:
+      dir: /var/loki/ruler-wal
+    alertmanager_url: http://alertmanager-operated.monitoring.svc.cluster.local:9093
 
 singleBinary:
   replicas: 1

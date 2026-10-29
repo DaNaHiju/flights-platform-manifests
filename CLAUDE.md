@@ -60,8 +60,8 @@ kind is NOT used. Never propose it.
   cannot deliver it on the homelab, because the `fake-local` provider keeps its
   values in Git and the token would end up committed.
 - Token: GitHub CLASSIC personal access token with ONLY the `read:packages`
-  scope. GHCR does not support fine-grained tokens. Expiry: 30 days.
-  Next rotation due before 2026-10-30.
+  scope. GHCR does not support fine-grained tokens.
+  PAT classic read:packages, 90 días, último cambio 2026-10-27, próximo antes del 2027-01-25
 - Rotation procedure (never paste the token into a command, a file or Git):
   1. Create the new classic token (read:packages only, 30 days), then load it
      into the shell without echo or history: `read -rs GHCR_TOKEN`
