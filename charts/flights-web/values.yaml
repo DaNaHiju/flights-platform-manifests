@@ -1,0 +1,60 @@
+image:
+  repository: ghcr.io/danahiju/flights-web
+  # Placeholder: no image with this tag exists. The CI of the app repo replaces
+  # it with sha-<commit> on the first merge, so ImagePullBackOff until then.
+  tag: "bootstrap"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+# Pod label `version`, separate from the image tag on purpose: an Istio
+# DestinationRule subset selects on it, and it must not change on every deploy.
+version: v1
+
+service:
+  type: ClusterIP
+  port: 80
+
+serviceAccount:
+  create: false
+  # Defaults to flights-web.fullname when create is true, "default" otherwise.
+  name: ""
+  annotations: {}
+  # Rendered on the ServiceAccount; the referenced Secrets must already exist.
+  imagePullSecrets: []
+
+podAnnotations: {}
+
+# Pod level. 101 is the `nginx` user of nginxinc/nginx-unprivileged; numeric
+# so the kubelet can verify runAsNonRoot.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 101
+  runAsGroup: 101
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi
+
+# Istio Gateway + VirtualService on the existing istio-ingressgateway.
+# Off by default: not every environment has one (EKS decides later).
+gateway:
+  enabled: false
+  # Matches the label of the pods created by the istio-gateway Application.
+  selector:
+    istio: ingressgateway
+  hosts:
+    - "*"

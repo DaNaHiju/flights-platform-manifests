@@ -1,0 +1,10 @@
+serviceAccount:
+  create: true
+  # Created by hand per namespace (bootstrap) — see CLAUDE.md, "ghcr-pull".
+  imagePullSecrets:
+    - name: ghcr-pull
+
+# istio-ingressgateway already runs in istio-system (Service type LoadBalancer,
+# served by k3s ServiceLB), so this only adds routing objects.
+gateway:
+  enabled: true
