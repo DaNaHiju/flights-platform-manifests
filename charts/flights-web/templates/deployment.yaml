@@ -47,16 +47,12 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          # The root filesystem is read-only; nginx writes its pid file and
-          # temp dirs (client body, proxy buffers) under /tmp. /var/cache/nginx
-          # is mounted too in case the image variant keeps its caches there.
+          # The root filesystem is read-only. nginx-unprivileged writes its pid
+          # file and every temp dir (client body, proxy, fastcgi, uwsgi, scgi)
+          # under /tmp, so that is the only writable path it needs.
           volumeMounts:
             - name: tmp
               mountPath: /tmp
-            - name: nginx-cache
-              mountPath: /var/cache/nginx
       volumes:
         - name: tmp
-          emptyDir: {}
-        - name: nginx-cache
           emptyDir: {}
