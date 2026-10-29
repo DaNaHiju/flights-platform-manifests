@@ -1,0 +1,42 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: {{ include "flights-web.fullname" . }}
+  labels:
+    {{- include "flights-web.labels" . | nindent 4 }}
+spec:
+  # Binds to the pods of the existing istio-ingressgateway (any namespace).
+  selector:
+    {{- toYaml .Values.gateway.selector | nindent 4 }}
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        {{- toYaml .Values.gateway.hosts | nindent 8 }}
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ include "flights-web.fullname" . }}
+  labels:
+    {{- include "flights-web.labels" . | nindent 4 }}
+spec:
+  hosts:
+    {{- toYaml .Values.gateway.hosts | nindent 4 }}
+  gateways:
+    - {{ include "flights-web.fullname" . }}
+  http:
+    # The whole site, including /api/, goes to the web pod: nginx proxies
+    # /api/ to flights-api, so the browser only ever talks to one origin.
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: {{ include "flights-web.fullname" . }}
+            port:
+              number: {{ .Values.service.port }}
+{{- end }}

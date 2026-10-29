@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "flights-web.fullname" . }}
+  labels:
+    {{- include "flights-web.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    # Port name `http` is what Istio uses to treat the traffic as HTTP.
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "flights-web.selectorLabels" . | nindent 4 }}
