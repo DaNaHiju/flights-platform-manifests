@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/danahiju/flights-worker
-  tag: "sha-7b5cbf9"
+  tag: "sha-e972917"
   pullPolicy: IfNotPresent
 
 cronjob:
