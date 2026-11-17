@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-gateway
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Must land last, after istiod is ready to accept the gateway's xDS connection.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: platform-infra
+  source:
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: gateway
+    targetRevision: 1.30.3
+    helm:
+      releaseName: istio-ingressgateway
+      values: |
+        # ClusterIP, not LoadBalancer: the ALB (istio-ingress-alb) is created by the
+        # AWS Load Balancer Controller from an Ingress and targets the pod IPs.
+        service:
+          type: ClusterIP
+        autoscaling:
+          enabled: false
+        replicaCount: 1
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

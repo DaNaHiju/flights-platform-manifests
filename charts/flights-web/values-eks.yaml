@@ -1,0 +1,24 @@
+# EKS values (Application flights-web-eks, namespace flights). image.tag is shared
+# with the homelab (values.yaml, bumped by CI): CI pushes the same sha-<7> to GHCR and ECR.
+image:
+  repository: 565923528020.dkr.ecr.eu-north-1.amazonaws.com/flights-web
+
+serviceAccount:
+  create: true
+  imagePullSecrets: []
+
+# The image's nginx proxies /api/ to the staging Service; point it at this release's API.
+nginx:
+  apiUpstream: flights-api-eks.flights.svc.cluster.local:8000
+
+# Gateway + VirtualService on the istio-ingressgateway; the ALB sits in front of it.
+gateway:
+  enabled: true
+
+nodeSelector:
+  workload: app
+tolerations:
+  - key: workload
+    operator: Equal
+    value: app
+    effect: NoSchedule

@@ -7,6 +7,9 @@ App code lives in the separate repo `flights-platform`.
 - `pop-os` — k3s v1.36.3+k3s1 homelab, always-on, reached over Tailscale.
   All development and validation happens here. Free.
 - AWS EKS — stood up at the END, only to capture assignment evidence, then destroyed.
+  Its own ArgoCD runs inside the cluster; everything EKS-specific lives under
+  `argocd/eks/` plus the `values-eks.yaml` of each chart (see `argocd/eks/README.md`).
+  The homelab files are never edited for EKS.
 kind is NOT used. Never propose it.
 
 ## GitOps rules
@@ -15,6 +18,10 @@ kind is NOT used. Never propose it.
   and argocd/projects/platform-infra.yaml. ArgoCD cannot bootstrap the Application
   that manages itself. Merging changes to these files does NOT update the live
   object — they must be re-applied with kubectl.
+- EKS adds its own bootstrap exceptions (cluster-local, documented in
+  `argocd/eks/README.md`): the first `helm install argocd`, then `kubectl apply` of
+  argocd/eks/projects/platform-infra.yaml and argocd/eks/bootstrap/platform-root-eks.yaml.
+  After that ArgoCD manages itself on EKS through the `argocd` Application.
 - platform-infra.yaml stays a bootstrap exception ON PURPOSE. platform-root (and
   every Application under argocd/apps/) runs under platform-infra. If ArgoCD
   managed it, a bad commit could remove a destination or resource kind that
@@ -107,8 +114,13 @@ ClusterSecretStores need `SkipDryRunOnMissingResource=true` on first sync.
 
 ## Secrets
 - No secrets in Git. ExternalSecret + ClusterSecretStore via ESO.
-- Two stores: `aws-secrets-manager` (IRSA) for EKS, `fake-local` for k3s.
-  IRSA needs an EKS OIDC provider, which k3s does not have.
+- Two stores: `aws-secrets-manager` for EKS, `fake-local` for k3s.
+  On EKS the store has no `jwt.serviceAccountRef`: ESO uses the identity of its own
+  controller pod through EKS Pod Identity. IRSA is not available: the Free plan's SCP
+  denies `iam:*Provider*`, so no OIDC provider can be created (see the infra repo README).
+- An AWS account ID is NOT a credential (it cannot authenticate anything, and it
+  appears in every ARN and ECR URL), so it may be committed here: ECR image
+  repositories carry it. Access keys, tokens and passwords still never go in Git.
 - The ESO-owned Secret name MUST equal flights-api.fullname: both the Deployment's
   envFrom and the postgresql subchart's auth.existingSecret depend on it.
 - Bitnami postgresql: auth.existingSecret + secretKeys.userPasswordKey: DB_PASSWORD

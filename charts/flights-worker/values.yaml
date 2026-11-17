@@ -44,3 +44,8 @@ resources:
 config:
   APP_NAME: flights-worker
   LOG_LEVEL: INFO
+
+# Pod scheduling. Empty by default (homelab); EKS pins workloads to the tainted
+# `app` node group (see values-eks.yaml).
+nodeSelector: {}
+tolerations: []

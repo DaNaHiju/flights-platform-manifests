@@ -1,0 +1,14 @@
+# EKS copy of argocd/projects/platform-apps.yaml: one namespace (flights), no
+# weekend sync window. Managed by the Application `projects` (argocd/eks/apps/projects.yaml).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform-apps
+  namespace: argocd
+spec:
+  description: Flights platform applications on EKS
+  sourceRepos:
+    - https://github.com/DaNaHiju/flights-platform-manifests.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: flights

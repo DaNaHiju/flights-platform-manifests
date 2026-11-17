@@ -1,0 +1,52 @@
+# Bootstrap exception (applied by hand on the EKS cluster): every Application under
+# argocd/eks/apps runs under this project, so ArgoCD must not manage it itself.
+# See CLAUDE.md, "GitOps rules". EKS copy of argocd/projects/platform-infra.yaml.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform-infra
+  namespace: argocd
+spec:
+  description: EKS platform components requiring cluster-scoped permissions (CRDs, ClusterRoles, webhooks)
+  sourceRepos:
+    - https://github.com/DaNaHiju/flights-platform-manifests.git
+    - https://istio-release.storage.googleapis.com/charts
+    - https://charts.external-secrets.io
+    - https://argoproj.github.io/argo-helm
+    - https://aws.github.io/eks-charts
+    - https://kubernetes.github.io/autoscaler
+    - https://kubernetes-sigs.github.io/metrics-server/
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: istio-system
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+    - server: https://kubernetes.default.svc
+      namespace: external-secrets
+    - server: https://kubernetes.default.svc
+      namespace: kube-system
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+    - group: external-secrets.io
+      kind: ClusterSecretStore
+    - group: storage.k8s.io
+      kind: StorageClass
+    - group: networking.k8s.io
+      kind: IngressClass
+    - group: elbv2.k8s.aws
+      kind: IngressClassParams
+    - group: apiregistration.k8s.io
+      kind: APIService
+    - group: scheduling.k8s.io
+      kind: PriorityClass

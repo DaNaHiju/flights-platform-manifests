@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flights-web-eks
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Workload wave: after the Istio CRDs (-2), the ClusterSecretStore (-1) and the StorageClass (-1).
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: platform-apps
+  source:
+    repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+    targetRevision: main
+    path: charts/flights-web
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-eks.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: flights
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

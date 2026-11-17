@@ -1,0 +1,93 @@
+# EKS values (Application flights-api-eks, namespace flights).
+#
+# Release name = Application name = "flights-api-eks". Because the chart name
+# "flights-api" is contained in it, flights-api.fullname renders "flights-api-eks",
+# which the Secret name, the postgresql existingSecret and the Service all use.
+# Values files cannot call chart helpers, so those names are hardcoded below.
+replicaCount: 1
+
+image:
+  repository: 565923528020.dkr.ecr.eu-north-1.amazonaws.com/flights-api
+  # Pulled with the node IAM role (AmazonEC2ContainerRegistryReadOnly): no pull secret.
+  tag: "sha-7b5cbf9"
+
+serviceAccount:
+  create: true
+  imagePullSecrets: []
+
+config:
+  ENVIRONMENT: eks
+
+nodeSelector:
+  workload: app
+tolerations:
+  - key: workload
+    operator: Equal
+    value: app
+    effect: NoSchedule
+
+postgresql:
+  enabled: true
+  primary:
+    # Not in the mesh: Postgres has its own wire protocol (same as staging).
+    podAnnotations:
+      sidecar.istio.io/inject: "false"
+    persistence:
+      storageClass: gp3
+      size: 2Gi
+    nodeSelector:
+      workload: app
+    tolerations:
+      - key: workload
+        operator: Equal
+        value: app
+        effect: NoSchedule
+  auth:
+    database: flights
+    username: flights
+    existingSecret: flights-api-eks
+    enablePostgresUser: false
+    secretKeys:
+      userPasswordKey: DB_PASSWORD
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  # Standalone: one pod. Replicas add nothing for a single-environment demo and
+  # a t3.large holds a limited number of pods.
+  architecture: standalone
+  master:
+    podAnnotations:
+      sidecar.istio.io/inject: "false"
+    persistence:
+      storageClass: gp3
+      size: 1Gi
+    nodeSelector:
+      workload: app
+    tolerations:
+      - key: workload
+        operator: Equal
+        value: app
+        effect: NoSchedule
+
+# DB credentials come from AWS Secrets Manager (secret flights/eks/db, created by
+# Terraform) through the aws-secrets-manager ClusterSecretStore. One JSON secret
+# holds both fields, hence remoteProperties.
+externalSecrets:
+  enabled: true
+  storeName: aws-secrets-manager
+  remoteKeys:
+    dbUser: flights/eks/db
+    dbPassword: flights/eks/db
+  remoteProperties:
+    dbUser: DB_USER
+    dbPassword: DB_PASSWORD
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 192Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

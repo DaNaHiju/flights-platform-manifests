@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-base
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Must land before istiod: installs the Istio CRDs it depends on.
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  project: platform-infra
+  source:
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: base
+    targetRevision: 1.30.3
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # Istio's CRDs exceed the last-applied-configuration annotation size limit under client-side apply.
+      - ServerSideApply=true
+      # Without this, ignoreDifferences only hides the diff: a sync would still
+      # apply the Git version and blank the caBundle below.
+      - RespectIgnoreDifferences=true
+  # istiod (pilot-discovery) patches this webhook at runtime: it injects the
+  # caBundle and flips failurePolicy from Ignore to Fail once validation is
+  # confirmed working. Both fields permanently differ from Git.
+  # managedFieldsManagers ignores everything that manager owns, rather than
+  # enumerating fields that change between Istio versions. This relies on
+  # ServerSideApply above, which is what makes the API server track per-field
+  # ownership.
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: istiod-default-validator
+      managedFieldsManagers:
+        - pilot-discovery
