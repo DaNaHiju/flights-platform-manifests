@@ -10,7 +10,9 @@ spec:
   description: EKS platform components requiring cluster-scoped permissions (CRDs, ClusterRoles, webhooks)
   sourceRepos:
     - https://github.com/DaNaHiju/flights-platform-manifests.git
-    - https://istio-release.storage.googleapis.com/charts
+    # Istio retired istio-release.storage.googleapis.com (403 since 1.30 is the last
+    # release published there); charts of all versions are mirrored here.
+    - https://blob.istio.io/istio-release/charts
     - https://charts.external-secrets.io
     - https://argoproj.github.io/argo-helm
     - https://aws.github.io/eks-charts
