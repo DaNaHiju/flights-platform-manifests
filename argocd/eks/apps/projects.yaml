@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: projects
+  namespace: argocd
+  # No resources-finalizer: the AppProject is a dependency of other Applications
+  # (see CLAUDE.md, "ArgoCD configuration Applications").
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  project: platform-infra
+  source:
+    repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+    targetRevision: main
+    path: argocd/eks/projects
+    directory:
+      # platform-infra.yaml is a bootstrap exception and must never be picked up here.
+      include: platform-apps.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true

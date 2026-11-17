@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istiod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Must land after istio-base (CRDs) and before istio-gateway.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: platform-infra
+  source:
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: istiod
+    targetRevision: 1.30.3
+    helm:
+      values: |
+        pilot:
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          replicaCount: 1
+        global:
+          defaultPodDisruptionBudget:
+            enabled: true
+        meshConfig:
+          accessLogFile: /dev/stdout
+          # Where sidecars send spans. Telemetry (mesh/istio-system) selects it by
+          # name; OTLP/gRPC to the Jaeger all-in-one collector in `monitoring`.
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # Required for managedFieldsManagers below: only server-side apply makes
+      # the API server track per-field ownership.
+      - ServerSideApply=true
+      # Without this, ignoreDifferences only hides the diff: a sync would still
+      # apply the Git version over the fields istiod owns.
+      - RespectIgnoreDifferences=true
+  # Same pattern as istio-base: istiod (pilot-discovery) patches its own
+  # validating webhook at runtime — caBundle and failurePolicy — so live state
+  # permanently differs from Git. Ignoring by field manager avoids enumerating
+  # fields that change between Istio versions.
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: istio-validator-istio-system
+      managedFieldsManagers:
+        - pilot-discovery

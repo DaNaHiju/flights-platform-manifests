@@ -1,0 +1,28 @@
+# EKS values (Application flights-worker-eks, namespace flights). image.tag is shared
+# with the homelab (values.yaml, bumped by CI).
+image:
+  repository: 565923528020.dkr.ecr.eu-north-1.amazonaws.com/flights-worker
+
+config:
+  ENVIRONMENT: eks
+  # Must exceed the CronJob interval (6 h = 21600 s) or /deals expires between runs.
+  DEALS_CACHE_TTL: "25200"
+  # MUST match what the flights-api.redisUrl helper composes for the release
+  # "flights-api-eks": "<release>-redis-master", port 6379, db 0.
+  REDIS_URL: "redis://flights-api-eks-redis-master:6379/0"
+
+serviceAccount:
+  create: true
+  imagePullSecrets: []
+
+# A CronJob's sidecar never exits, so the Job would hang short of Completed.
+podAnnotations:
+  sidecar.istio.io/inject: "false"
+
+nodeSelector:
+  workload: app
+tolerations:
+  - key: workload
+    operator: Equal
+    value: app
+    effect: NoSchedule

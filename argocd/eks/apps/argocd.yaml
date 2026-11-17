@@ -1,0 +1,40 @@
+# ArgoCD manages itself on EKS. First installed by hand with helm (argocd/eks/README.md),
+# then adopted by this Application. Same chart, version and values files as the install.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  # No resources-finalizer: deleting this Application must not delete ArgoCD.
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  project: platform-infra
+  sources:
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      targetRevision: 10.3.3
+      helm:
+        releaseName: argocd
+        valueFiles:
+          - $values/infra/helm-values/argocd.yaml
+          - $values/infra/helm-values/argocd-eks.yaml
+    - repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: false
+    syncOptions:
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: argocd-secret
+      managedFieldsManagers:
+        - argocd-server

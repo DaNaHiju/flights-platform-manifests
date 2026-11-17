@@ -25,6 +25,13 @@ serviceAccount:
 
 podAnnotations: {}
 
+# The image bakes in an nginx config whose /api/ upstream is the staging
+# Service (flights-api-staging.staging.svc.cluster.local). Set apiUpstream
+# ("<service>.<namespace>.svc.cluster.local:8000") to mount a ConfigMap over it
+# instead; empty keeps the image's own config (homelab).
+nginx:
+  apiUpstream: ""
+
 # Pod level. 101 is the `nginx` user of nginxinc/nginx-unprivileged; numeric
 # so the kubelet can verify runAsNonRoot.
 podSecurityContext:
@@ -58,3 +65,8 @@ gateway:
     istio: ingressgateway
   hosts:
     - "*"
+
+# Pod scheduling. Empty by default (homelab); EKS pins workloads to the tainted
+# `app` node group (see values-eks.yaml).
+nodeSelector: {}
+tolerations: []

@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aws-load-balancer-controller
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Wave -2: its CRDs and webhooks must be ready before anything creates Ingresses.
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  project: platform-infra
+  source:
+    repoURL: https://aws.github.io/eks-charts
+    chart: aws-load-balancer-controller
+    targetRevision: 3.6.3
+    helm:
+      values: |
+        clusterName: flights-dev-eks
+        region: eu-north-1
+        replicaCount: 1
+        # AWS credentials come from EKS Pod Identity (association created by
+        # Terraform for kube-system/aws-load-balancer-controller): no annotation here.
+        serviceAccount:
+          create: true
+          name: aws-load-balancer-controller
+        # No Service of type LoadBalancer is used, so the mutating webhook for
+        # Services is not needed (and cannot block Service creation if the pod is down).
+        enableServiceMutatorWebhook: false
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

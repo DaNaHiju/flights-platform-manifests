@@ -6,7 +6,10 @@
 # explicitly. The EKS bootstrap sets fake.enabled=false.
 aws:
   enabled: true
-  # Must match the region Terraform creates the secrets in (var.region).
-  region: us-east-1
+  # Must match the region Terraform creates the secrets in (var.aws_region).
+  region: eu-north-1
+  # true: IRSA via jwt.serviceAccountRef. false: no auth block, the controller
+  # pod's own identity is used (EKS Pod Identity). The EKS Application sets false.
+  serviceAccountAuth: true
 fake:
   enabled: true

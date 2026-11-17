@@ -1,0 +1,25 @@
+# Bootstrap exception for the EKS cluster (applied by hand, see argocd/eks/README.md).
+# Same pattern as argocd/bootstrap/platform-root.yaml, but it syncs argocd/eks/apps:
+# the EKS Applications only (no monitoring stack, no homelab workloads).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-root-eks
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform-infra
+  source:
+    repoURL: https://github.com/DaNaHiju/flights-platform-manifests.git
+    targetRevision: main
+    path: argocd/eks/apps
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

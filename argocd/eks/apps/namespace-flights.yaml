@@ -1,0 +1,10 @@
+# Applied by platform-root-eks directly (like argocd/apps/namespace-staging.yaml).
+# Wave -3: exists before any workload; istio-injection=enabled puts every pod in the mesh.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flights
+  labels:
+    istio-injection: enabled
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"

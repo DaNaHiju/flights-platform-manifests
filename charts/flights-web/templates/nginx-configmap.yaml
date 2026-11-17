@@ -1,0 +1,26 @@
+{{- if .Values.nginx.apiUpstream }}
+# Same config as services/web/nginx.conf in the app repo, with the /api/
+# upstream taken from values. Mounted over /etc/nginx/conf.d/default.conf.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "flights-web.fullname" . }}-nginx
+  labels:
+    {{- include "flights-web.labels" . | nindent 4 }}
+data:
+  default.conf: |
+    server {
+        listen 8080;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        location /api/ {
+            proxy_pass http://{{ .Values.nginx.apiUpstream }}/;
+            proxy_read_timeout 60s;
+        }
+
+        location / {
+            try_files $uri /index.html;
+        }
+    }
+{{- end }}

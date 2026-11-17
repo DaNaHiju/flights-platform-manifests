@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-autoscaler
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: platform-infra
+  source:
+    repoURL: https://kubernetes.github.io/autoscaler
+    chart: cluster-autoscaler
+    targetRevision: 9.60.0
+    helm:
+      values: |
+        awsRegion: eu-north-1
+        # Finds the node groups' ASGs by the tags Terraform puts on them.
+        autoDiscovery:
+          clusterName: flights-dev-eks
+        # The autoscaler minor version must match the cluster's (EKS 1.35).
+        image:
+          tag: v1.35.3
+        # AWS credentials from EKS Pod Identity (kube-system/cluster-autoscaler).
+        rbac:
+          serviceAccount:
+            create: true
+            name: cluster-autoscaler
+        extraArgs:
+          skip-nodes-with-local-storage: false
+          expander: least-waste
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -73,6 +73,12 @@ externalSecrets:
   remoteKeys:
     dbUser: flights-api/db-user
     dbPassword: flights-api/db-password
+  # Optional JSON property inside the remote secret. Empty: the whole value is
+  # used (one secret per field). Set when one secret holds both fields as JSON
+  # (EKS: Secrets Manager secret flights/eks/db with keys DB_USER, DB_PASSWORD).
+  remoteProperties:
+    dbUser: ""
+    dbPassword: ""
 
 istio:
   # Sidecar CRD (config scoping), not sidecar injection. When enabled, ships a
@@ -80,3 +86,8 @@ istio:
   # flights-api proxies. Off by default; enabled in production.
   sidecarScope:
     enabled: false
+
+# Pod scheduling. Empty by default (homelab); EKS pins workloads to the tainted
+# `app` node group (see values-eks.yaml).
+nodeSelector: {}
+tolerations: []
