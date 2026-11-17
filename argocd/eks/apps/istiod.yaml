@@ -11,7 +11,7 @@ metadata:
 spec:
   project: platform-infra
   source:
-    repoURL: https://istio-release.storage.googleapis.com/charts
+    repoURL: https://blob.istio.io/istio-release/charts
     chart: istiod
     targetRevision: 1.30.3
     helm:
