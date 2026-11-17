@@ -11,7 +11,7 @@ metadata:
 spec:
   project: platform-infra
   source:
-    repoURL: https://istio-release.storage.googleapis.com/charts
+    repoURL: https://blob.istio.io/istio-release/charts
     chart: istiod
     targetRevision: 1.30.3
     helm:
@@ -26,6 +26,11 @@ spec:
               memory: 512Mi
           replicaCount: 1
         global:
+          # registry.istio.io/release (the chart default) answers 403: the Istio
+          # project retired it. The same 1.30.3 images are on Docker Hub. This hub is
+          # also used by the sidecar injection template, so gateway and workload
+          # proxies pull proxyv2 from here too.
+          hub: docker.io/istio
           defaultPodDisruptionBudget:
             enabled: true
         meshConfig:
