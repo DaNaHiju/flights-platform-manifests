@@ -1,4 +1,4 @@
-# Both stores render by default.
+# aws and fake render by default; kubernetes is opt-in.
 #
 # The homelab k3s cluster has no EKS OIDC provider, so the AWS store cannot
 # authenticate there and would report NotReady (a degraded ArgoCD app). The
@@ -13,3 +13,11 @@ aws:
   serviceAccountAuth: true
 fake:
   enabled: true
+# Kubernetes-provider store ("homelab-secrets") for real secrets that cannot go
+# through fake-local because that store's values live in Git. Off by default;
+# the homelab Application turns it on. EKS uses aws-secrets-manager instead.
+kubernetes:
+  enabled: false
+  # Namespace holding the Secrets created by hand (bootstrap, see CLAUDE.md).
+  sourceNamespace: external-secrets
+  serviceAccountName: eso-homelab-secrets-reader
