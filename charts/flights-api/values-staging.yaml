@@ -8,6 +8,8 @@ serviceAccount:
 
 config:
   ENVIRONMENT: staging
+  # Staging users fly from TLV: price in shekels. Keep in sync with the worker's homelab values.
+  FLIGHTS_CURRENCY: ILS
   # Not a secret: the public gateway URL. The key comes from the ExternalSecret below.
   AMADEUS_GATEWAY_URL: https://api.amadeus.com
   DB_HOST: flights-api-postgresql
