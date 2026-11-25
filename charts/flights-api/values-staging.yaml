@@ -1,5 +1,5 @@
 image:
-  tag: "sha-e972917"
+  tag: "sha-68e5663"
 
 serviceAccount:
   # Created by hand per namespace (bootstrap) — see CLAUDE.md, "ghcr-pull".
