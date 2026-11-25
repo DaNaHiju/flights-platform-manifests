@@ -68,7 +68,7 @@ kind is NOT used. Never propose it.
   values in Git and the token would end up committed.
 - Token: GitHub CLASSIC personal access token with ONLY the `read:packages`
   scope. GHCR does not support fine-grained tokens.
-  PAT classic read:packages, 90 días, último cambio 2026-10-27, próximo antes del 2027-01-25
+  Current token: classic PAT, read:packages, 90 days; last rotated 2026-10-27, next rotation due before 2027-01-25.
 - Rotation procedure (never paste the token into a command, a file or Git):
   1. Create the new classic token (read:packages only, 30 days), then load it
      into the shell without echo or history: `read -rs GHCR_TOKEN`
@@ -93,6 +93,34 @@ kind is NOT used. Never propose it.
 - Does NOT apply on EKS: images come from ECR and the node IAM role grants the
   pull. No pull secret; leave `serviceAccount.imagePullSecrets` empty there.
 
+## Bootstrap: homelab source secrets (created by hand)
+- Real third-party credentials cannot go through `fake-local` (its values are in
+  Git). On the homelab they come from the `homelab-secrets` ClusterSecretStore
+  (ESO Kubernetes provider, argocd/platform-infra/clustersecretstores), which
+  reads Secrets created BY HAND in the `external-secrets` namespace. This is the
+  fourth manual exception, same reasoning as ghcr-pull.
+- Today there is one: `flights-amadeus`, key `api-key` = the Amadeus Travel
+  Builder API key. Consumed by the ExternalSecret `flights-api-staging-amadeus`
+  (charts/flights-api, staging only), which writes the Secret of the same name
+  that flights-api (envFrom) and flights-worker (secretKeyRef) read.
+- Create or rotate it without the key touching a file, a command line or Git:
+    read -rs AMADEUS_API_KEY
+    printf %s "$AMADEUS_API_KEY" | kubectl create secret generic flights-amadeus \
+      -n external-secrets --from-file=api-key=/dev/stdin --dry-run=client -o yaml \
+      | kubectl apply -f -
+    unset AMADEUS_API_KEY
+  (`read -rs` keeps it off the screen and out of history; stdin keeps it out of
+  the process list, where `--from-literal=` would expose it.)
+- Then ESO syncs within `refreshInterval` (1h); to sync now, annotate the
+  ExternalSecret: `kubectl annotate externalsecret flights-api-staging-amadeus -n staging
+  force-sync=$(date +%s) --overwrite`. envFrom is read at container start, so
+  restart the flights-api pods afterwards (the worker reads it on its next run).
+- Until the Secret exists the ExternalSecret reports SecretSyncedError (the
+  flights-api-staging Application shows Degraded) and searches answer 503
+  `provider_not_configured`. Health, readiness, bookings and /deals keep working.
+- Does NOT apply on EKS: there the key belongs in AWS Secrets Manager (not wired
+  yet; production/EKS are out of scope of the Amadeus change).
+
 ## Istio — webhook drift (solved, do not re-derive)
 - TWO separate ValidatingWebhookConfigurations drift, not one:
     istio-base -> istiod-default-validator
@@ -114,7 +142,8 @@ ClusterSecretStores need `SkipDryRunOnMissingResource=true` on first sync.
 
 ## Secrets
 - No secrets in Git. ExternalSecret + ClusterSecretStore via ESO.
-- Two stores: `aws-secrets-manager` for EKS, `fake-local` for k3s.
+- Three stores: `aws-secrets-manager` for EKS; on k3s, `fake-local` for inert
+  test fixtures and `homelab-secrets` for real secrets created by hand.
   On EKS the store has no `jwt.serviceAccountRef`: ESO uses the identity of its own
   controller pod through EKS Pod Identity. IRSA is not available: the Free plan's SCP
   denies `iam:*Provider*`, so no OIDC provider can be created (see the infra repo README).
@@ -166,8 +195,9 @@ ClusterSecretStores need `SkipDryRunOnMissingResource=true` on first sync.
 
 ## Hard rules
 - Never run `terraform apply` without asking first.
-- Never `kubectl apply` anything except the two bootstrap files above and the
-  `ghcr-pull` Secret (see "Bootstrap: ghcr-pull").
+- Never `kubectl apply` anything except the two bootstrap files above, the
+  `ghcr-pull` Secret (see "Bootstrap: ghcr-pull") and the homelab source
+  secrets (see "Bootstrap: homelab source secrets").
 
 ## Layout
 infra/terraform/     EKS, VPC, IAM, ECR, S3+DynamoDB backend

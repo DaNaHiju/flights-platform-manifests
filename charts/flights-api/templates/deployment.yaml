@@ -36,6 +36,15 @@ spec:
                 name: {{ include "flights-api.fullname" . }}
             - secretRef:
                 name: {{ include "flights-api.fullname" . }}
+            {{- if .Values.amadeus.enabled }}
+            # AMADEUS_API_KEY. optional: a missing key degrades search to 503,
+            # it does not stop the pod (health, bookings, deals keep working).
+            # envFrom is read at container start: after rotating the key, restart
+            # the pods to pick it up.
+            - secretRef:
+                name: {{ include "flights-api.fullname" . }}-amadeus
+                optional: true
+            {{- end }}
           livenessProbe:
             httpGet:
               path: {{ .Values.probes.liveness.path }}

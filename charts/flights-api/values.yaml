@@ -80,6 +80,21 @@ externalSecrets:
     dbUser: ""
     dbPassword: ""
 
+# Flight data provider: Amadeus Travel Builder APIs. Off by default, so an
+# environment opts in explicitly; values-staging.yaml enables it. Production
+# keeps rendering exactly what it rendered before this block existed.
+amadeus:
+  enabled: false
+  # Where the API key comes from. ESO writes it into the Secret
+  # "<fullname>-amadeus" (key AMADEUS_API_KEY), mounted with optional: true:
+  # without it the pod still starts and searches answer 503
+  # provider_not_configured instead of the pod failing to start.
+  externalSecret:
+    storeName: homelab-secrets
+    remoteKey: flights-amadeus
+    remoteProperty: api-key
+    refreshInterval: 1h
+
 istio:
   # Sidecar CRD (config scoping), not sidecar injection. When enabled, ships a
   # networking.istio.io Sidecar that limits the mesh config istiod pushes to the
