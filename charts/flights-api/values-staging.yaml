@@ -8,6 +8,8 @@ serviceAccount:
 
 config:
   ENVIRONMENT: staging
+  # Not a secret: the public gateway URL. The key comes from the ExternalSecret below.
+  AMADEUS_GATEWAY_URL: https://api.amadeus.com
   DB_HOST: flights-api-postgresql
   REDIS_URL: redis://flights-api-redis-master:6379/0
 
@@ -61,3 +63,15 @@ externalSecrets:
   remoteKeys:
     dbUser: flights-api/db-user
     dbPassword: flights-api/db-password
+
+# Amadeus API key: ExternalSecret -> Secret "flights-api-staging-amadeus".
+# Homelab source: the Secret "flights-amadeus" (key "api-key") created by hand
+# in the external-secrets namespace and served by the homelab-secrets store.
+# Until it exists the ExternalSecret reports SecretSyncedError and searches
+# answer 503 provider_not_configured; nothing else is affected.
+amadeus:
+  enabled: true
+  externalSecret:
+    storeName: homelab-secrets
+    remoteKey: flights-amadeus
+    remoteProperty: api-key

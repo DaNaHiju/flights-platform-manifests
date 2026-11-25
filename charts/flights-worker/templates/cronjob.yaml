@@ -44,6 +44,16 @@ spec:
                 - name: {{ $key }}
                   value: {{ get $.Values.config $key | quote }}
                 {{- end }}
+                {{- with .Values.amadeus.existingSecret }}
+                # optional: a missing key must not stop the Job from starting;
+                # the worker logs it and keeps the previous deals.
+                - name: AMADEUS_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ . }}
+                      key: AMADEUS_API_KEY
+                      optional: true
+                {{- end }}
               securityContext:
                 {{- toYaml .Values.securityContext | nindent 16 }}
               resources:

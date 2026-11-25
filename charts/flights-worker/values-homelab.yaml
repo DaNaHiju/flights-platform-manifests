@@ -7,6 +7,12 @@ config:
   # "flights-api-staging" release: "<release>-redis-master" on port 6379, db 0.
   # Values files cannot call another chart's helpers, so this is hardcoded.
   REDIS_URL: "redis://flights-api-staging-redis-master:6379/0"
+  AMADEUS_GATEWAY_URL: https://api.amadeus.com
+
+# Written by flights-api-staging's ExternalSecret (charts/flights-api,
+# externalsecret-amadeus.yaml) in this same namespace.
+amadeus:
+  existingSecret: flights-api-staging-amadeus
 
 serviceAccount:
   create: true

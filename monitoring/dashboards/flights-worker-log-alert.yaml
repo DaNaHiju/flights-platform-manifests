@@ -26,6 +26,6 @@ data:
             annotations:
               summary: flights-worker refreshed 0 deals
               description: >-
-                The provider (Google, through fli) returned no data in the last
-                worker run. deals:top in Redis keeps the last good value, so
+                The flight provider (Amadeus) returned no data in the last
+                worker run, or AMADEUS_API_KEY is missing. deals:top in Redis keeps the last good value, so
                 GET /deals still serves it until its TTL expires.

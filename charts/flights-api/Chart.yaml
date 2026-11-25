@@ -1,6 +1,6 @@
 apiVersion: v2
 name: flights-api
-description: Flights booking API backed by Google Flights data
+description: Flights search and booking API backed by the Amadeus Travel Builder APIs
 type: application
 version: 0.1.0
 appVersion: "0.1.0"

@@ -45,6 +45,12 @@ config:
   APP_NAME: flights-worker
   LOG_LEVEL: INFO
 
+# Amadeus API key for the deals refresh. The worker does not own the secret:
+# it reads the one flights-api's ExternalSecret writes in the same namespace.
+# Empty: no AMADEUS_API_KEY env (the job then keeps the previous deals).
+amadeus:
+  existingSecret: ""
+
 # Pod scheduling. Empty by default (homelab); EKS pins workloads to the tainted
 # `app` node group (see values-eks.yaml).
 nodeSelector: {}

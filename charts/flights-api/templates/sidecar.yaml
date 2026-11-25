@@ -31,10 +31,11 @@ spec:
   outboundTrafficPolicy:
     # ALLOW_ANY, deliberately — not REGISTRY_ONLY.
     #
-    # flights-api makes outbound calls to the external Google Flights API,
-    # which is not catalogued by a ServiceEntry. REGISTRY_ONLY blackholes any
-    # destination not in the mesh registry (here, only the two egress scopes
-    # above), so those calls would fail with a sidecar-generated 502.
+    # flights-api makes outbound calls to the external Amadeus Travel Builder
+    # APIs (api.amadeus.com), which are not catalogued by a ServiceEntry.
+    # REGISTRY_ONLY blackholes any destination not in the mesh registry (here,
+    # only the two egress scopes above), so those calls would fail with a
+    # sidecar-generated 502.
     # ALLOW_ANY lets unknown external destinations pass through while still
     # keeping the *config* pushed to this proxy scoped by egress.hosts.
     #
