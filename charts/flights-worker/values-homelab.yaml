@@ -1,5 +1,7 @@
 config:
   ENVIRONMENT: staging
+  # Deals are cached in the currency the API serves. Keep in sync with flights-api staging.
+  FLIGHTS_CURRENCY: ILS
   # Must exceed the CronJob interval (6 h = 21600 s) or /deals expires between runs.
   DEALS_CACHE_TTL: "25200"
   # Not a secret: internal hostname, no credential (staging Redis has auth off).
