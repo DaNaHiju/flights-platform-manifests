@@ -95,6 +95,20 @@ amadeus:
     remoteProperty: api-key
     refreshInterval: 1h
 
+# Destination photos: Pixabay API. Off by default, like "amadeus": an
+# environment opts in explicitly; values-staging.yaml enables it. Production
+# and EKS keep rendering exactly what they rendered before this block existed.
+pixabay:
+  enabled: false
+  # ESO writes the key into the Secret "<fullname>-pixabay" (key
+  # PIXABAY_API_KEY), mounted with optional: true: without it the pod still
+  # starts and GET /destination-image answers {"available": false}.
+  externalSecret:
+    storeName: homelab-secrets
+    remoteKey: flights-pixabay
+    remoteProperty: api-key
+    refreshInterval: 1h
+
 istio:
   # Sidecar CRD (config scoping), not sidecar injection. When enabled, ships a
   # networking.istio.io Sidecar that limits the mesh config istiod pushes to the
