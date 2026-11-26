@@ -99,27 +99,36 @@ kind is NOT used. Never propose it.
   (ESO Kubernetes provider, argocd/platform-infra/clustersecretstores), which
   reads Secrets created BY HAND in the `external-secrets` namespace. This is the
   fourth manual exception, same reasoning as ghcr-pull.
-- Today there is one: `flights-amadeus`, key `api-key` = the Amadeus Travel
-  Builder API key. Consumed by the ExternalSecret `flights-api-staging-amadeus`
-  (charts/flights-api, staging only), which writes the Secret of the same name
-  that flights-api (envFrom) and flights-worker (secretKeyRef) read.
+- Today there are two, both with key `api-key`:
+  - `flights-amadeus` = the Amadeus Travel Builder API key. Consumed by the
+    ExternalSecret `flights-api-staging-amadeus` (charts/flights-api, staging
+    only), which writes the Secret of the same name that flights-api (envFrom)
+    and flights-worker (secretKeyRef) read.
+  - `flights-pixabay` = the Pixabay API key (destination photos). Consumed by the
+    ExternalSecret `flights-api-staging-pixabay` (charts/flights-api, staging
+    only), which writes the Secret of the same name (`PIXABAY_API_KEY`) that
+    flights-api reads with envFrom (`optional: true`). The worker does not use it.
 - Create or rotate it without the key touching a file, a command line or Git:
     read -rs AMADEUS_API_KEY
     printf %s "$AMADEUS_API_KEY" | kubectl create secret generic flights-amadeus \
       -n external-secrets --from-file=api-key=/dev/stdin --dry-run=client -o yaml \
       | kubectl apply -f -
     unset AMADEUS_API_KEY
+  Same for Pixabay: swap `AMADEUS_API_KEY` for `PIXABAY_API_KEY` and
+  `flights-amadeus` for `flights-pixabay`.
   (`read -rs` keeps it off the screen and out of history; stdin keeps it out of
   the process list, where `--from-literal=` would expose it.)
 - Then ESO syncs within `refreshInterval` (1h); to sync now, annotate the
   ExternalSecret: `kubectl annotate externalsecret flights-api-staging-amadeus -n staging
-  force-sync=$(date +%s) --overwrite`. envFrom is read at container start, so
+  force-sync=$(date +%s) --overwrite` (`flights-api-staging-pixabay` for Pixabay). envFrom is read at container start, so
   restart the flights-api pods afterwards (the worker reads it on its next run).
 - Until the Secret exists the ExternalSecret reports SecretSyncedError (the
   flights-api-staging Application shows Degraded) and searches answer 503
   `provider_not_configured`. Health, readiness, bookings and /deals keep working.
+  Without `flights-pixabay` the same happens to its ExternalSecret, and the web
+  shows gradients instead of destination photos; nothing else is affected.
 - Does NOT apply on EKS: there the key belongs in AWS Secrets Manager (not wired
-  yet; production/EKS are out of scope of the Amadeus change).
+  yet; production/EKS are out of scope of the Amadeus and Pixabay changes).
 
 ## Istio — webhook drift (solved, do not re-derive)
 - TWO separate ValidatingWebhookConfigurations drift, not one:

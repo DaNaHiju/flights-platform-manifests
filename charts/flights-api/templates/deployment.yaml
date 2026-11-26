@@ -45,6 +45,15 @@ spec:
                 name: {{ include "flights-api.fullname" . }}-amadeus
                 optional: true
             {{- end }}
+            {{- if .Values.pixabay.enabled }}
+            # PIXABAY_API_KEY. optional: a missing key only means no destination
+            # photos (the page keeps its gradient); the pod still starts and
+            # search, bookings and deals keep working. Read at container start:
+            # restart the pods after rotating the key.
+            - secretRef:
+                name: {{ include "flights-api.fullname" . }}-pixabay
+                optional: true
+            {{- end }}
           livenessProbe:
             httpGet:
               path: {{ .Values.probes.liveness.path }}

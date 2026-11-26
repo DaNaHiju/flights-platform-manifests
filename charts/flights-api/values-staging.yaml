@@ -80,3 +80,16 @@ amadeus:
     storeName: homelab-secrets
     remoteKey: flights-amadeus
     remoteProperty: api-key
+
+# Pixabay API key (destination photos): ExternalSecret -> Secret
+# "flights-api-staging-pixabay". Homelab source: the Secret "flights-pixabay"
+# (key "api-key") created by hand in the external-secrets namespace and served
+# by the homelab-secrets store. Until it exists the ExternalSecret reports
+# SecretSyncedError and the page shows gradients instead of photos; nothing
+# else is affected.
+pixabay:
+  enabled: true
+  externalSecret:
+    storeName: homelab-secrets
+    remoteKey: flights-pixabay
+    remoteProperty: api-key
