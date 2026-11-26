@@ -14,6 +14,9 @@ config:
   AMADEUS_GATEWAY_URL: https://api.amadeus.com
   DB_HOST: flights-api-postgresql
   REDIS_URL: redis://flights-api-redis-master:6379/0
+  # Amadeus returns at most this many offers per airline, usually the
+  # cheapest first. 20 hid faster but pricier itineraries; testing 50.
+  AMADEUS_MAX_RESULTS_PER_MERCHANT: "50"
 
 postgresql:
   enabled: true
